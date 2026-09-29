@@ -65,8 +65,8 @@ function pickTopTask(){
   if(!pending.length)return null;
   var po={high:0,mid:1,low:2};
   pending.sort(function(a,b){
-    var ad=a.deadline?new Date(a.deadline).getTime():Infinity;
-    var bd=b.deadline?new Date(b.deadline).getTime():Infinity;
+    var ad=a.deadline?parseLocalDate(a.deadline).getTime():Infinity;
+    var bd=b.deadline?parseLocalDate(b.deadline).getTime():Infinity;
     if(ad!==bd)return ad-bd;
     return (po[a.priority]||1)-(po[b.priority]||1);
   });
@@ -91,7 +91,7 @@ function renderCommandCenter(){
     var top=pickTopTask();
     if(top){
       var todayMid=new Date(new Date().toDateString()).getTime();
-      var dl=top.deadline?new Date(top.deadline).getTime():null;
+      var dl=top.deadline?parseLocalDate(top.deadline).getTime():null;
       eyebrow='<i data-lucide="compass"></i> ماذا الآن؟';
       if(dl!==null&&dl<todayMid){ title='أنجِز المتأخّر: '+esc(top.text); sub='ابدأ بـ ٢٠ دقيقة فقط — خطوة واحدة تكفي لتتحرّك.'; }
       else if(dl!==null&&dl===todayMid){ title='موعد اليوم: '+esc(top.text); sub='لنبدأها الآن بجلسة تركيز قصيرة قبل أن ينتهي اليوم.'; }
@@ -325,7 +325,7 @@ function jarWeight(t){
   if(t.highYield)w+=2;
   if(t.today)w+=2;
   if(t.deadline){
-    var d=(new Date(t.deadline).getTime()-new Date(new Date().toDateString()).getTime())/86400000;
+    var d=(parseLocalDate(t.deadline).getTime()-new Date(new Date().toDateString()).getTime())/86400000;
     if(d<=0)w+=3; else if(d<=3)w+=1;
   }
   return w;
@@ -430,7 +430,7 @@ function renderMorningRitual(){
     var pending=(S.tasks||[]).filter(function(t){return !t.done&&!t.archived;});
     var po={high:0,mid:1,low:2};
     pending.sort(function(a,b){
-      var ad=a.deadline?new Date(a.deadline).getTime():Infinity,bd=b.deadline?new Date(b.deadline).getTime():Infinity;
+      var ad=a.deadline?parseLocalDate(a.deadline).getTime():Infinity,bd=b.deadline?parseLocalDate(b.deadline).getTime():Infinity;
       if(ad!==bd)return ad-bd;return (po[a.priority]||1)-(po[b.priority]||1);
     });
     var rows=pending.slice(0,12).map(function(t){

@@ -55,7 +55,7 @@ function checkTaskReminders(){
   if(h>=9){
     S.tasks.forEach(function(t){
       if(!t||t.done||t.archived||!t.deadline)return;
-      var dm=new Date(t.deadline).getTime(); if(isNaN(dm))return;
+      var dm=parseLocalDate(t.deadline).getTime(); if(isNaN(dm))return;
       if(dm<todayMs&&!flags['over_'+t.id]){
         flags['over_'+t.id]=true;changed=true;
         // (إصلاح) الحقل اسمه text مش title — كانت الإشعارات تظهر بلا اسم الواجب دائماً

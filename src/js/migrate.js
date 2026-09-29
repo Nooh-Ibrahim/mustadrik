@@ -55,7 +55,7 @@ function dmRun(){
           .then(function(){ return dmSnapshot('pre-v'+ver); })
           .then(function(){ return DM_STEPS[ver] ? DM_STEPS[ver]() : null; })
           .then(function(){ return metaSet('dataVersion',ver); })
-          .then(function(){ console.info('[الاستدراك] migrated data → v'+ver); });
+          .then(function(){ console.info('[Mustadrik] migrated data → v'+ver); });
       })(v);
     }
     return chain;

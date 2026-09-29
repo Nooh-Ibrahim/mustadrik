@@ -381,7 +381,7 @@ function adhkarDelete(id){
   var i=(S.adhkar||[]).findIndex(function(x){return x.id===id;}); if(i<0)return;
   var d=S.adhkar[i];
   S.adhkar.splice(i,1); save(); renderAdhkar();
-  undoToast('حُذف «'+esc((d.name||'').slice(0,24))+'»',function(){
+  undoToast('حُذف «'+(d.name||'').slice(0,24)+'»',function(){
     S.adhkar.splice(Math.min(i,S.adhkar.length),0,d); save(); renderAdhkar();
   });
 }

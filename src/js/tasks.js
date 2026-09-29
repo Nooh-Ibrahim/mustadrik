@@ -20,7 +20,7 @@ function deleteTask(id){
   var i=(S.tasks||[]).findIndex(function(t){return t.id===id;}); if(i<0)return;
   var t=S.tasks[i];
   S.tasks.splice(i,1); save(); renderTasks(); updateStats();
-  undoToast('حُذفت «'+esc((t.text||'').slice(0,24))+'»',function(){
+  undoToast('حُذفت «'+(t.text||'').slice(0,24)+'»',function(){
     S.tasks.splice(Math.min(i,S.tasks.length),0,t); save(); renderTasks(); updateStats();
   });
 }
@@ -156,7 +156,7 @@ function renderTaskItem(t){
   if(t.expanded){
     var subSum=stepsArr.reduce(function(a,s){return a+(s.sessions||1);},0);
     steps='<div class="task-steps"><div class="task-pomo-edit"><i data-lucide="timer"></i> الجهد المُقدّر (جلسات): <input type="number" min="1" max="99" value="'+t.pomo+'" onclick="event.stopPropagation()" onchange="setTaskPomo('+t.id+',this.value)"></div>'+
-    '<div class="task-date-edit"><span><i data-lucide="calendar"></i> الاستحقاق</span><input type="date" value="'+(t.deadline||'')+'" onclick="event.stopPropagation()" onchange="setTaskDeadline('+t.id+',this.value)"><span><i data-lucide="check-circle-2"></i> الإتمام</span><input type="date" value="'+(t.doneAt?new Date(t.doneAt).toISOString().slice(0,10):'')+'" onclick="event.stopPropagation()" onchange="setTaskDoneAt('+t.id+',this.value)"></div>'+stepsArr.map(function(s,si){
+    '<div class="task-date-edit"><span><i data-lucide="calendar"></i> الاستحقاق</span><input type="date" value="'+(t.deadline||'')+'" onclick="event.stopPropagation()" onchange="setTaskDeadline('+t.id+',this.value)"><span><i data-lucide="check-circle-2"></i> الإتمام</span><input type="date" value="'+(t.doneAt?localDateKey(new Date(t.doneAt)):'')+'" onclick="event.stopPropagation()" onchange="setTaskDoneAt('+t.id+',this.value)"></div>'+stepsArr.map(function(s,si){
       return '<div class="task-step'+(s.done?' done-step':'')+'">'+
         '<input type="checkbox" '+(s.done?'checked':'')+' onchange="toggleStep('+t.id+','+si+')">'+
         '<span class="ts-text">'+esc(s.text)+'</span>'+
@@ -175,7 +175,7 @@ function renderTaskItem(t){
   // تلوين ذكي: حدّ ملوّن بحسب قُرب الموعد
   var dlCls='';
   if(!t.done&&!t.archived&&t.deadline){
-    var dlDiff=Math.ceil((new Date(t.deadline)-new Date())/(1000*60*60*24));
+    var dlDiff=Math.ceil((parseLocalDate(t.deadline)-new Date())/(1000*60*60*24));
     dlCls=dlDiff<0?' ti-over':dlDiff<=1?' ti-urgent':dlDiff<=3?' ti-soon':' ti-ok';
   }
   return '<div class="task-item'+(t.done?' done':'')+(t.today?' is-today':'')+(t.archived?' archived':'')+dlCls+'" data-id="'+t.id+'"'+dragAttrs+'>'+
@@ -235,7 +235,7 @@ function renderTasks(){
   }else{
     filtered.sort(function(a,b){
       if(a.done!==b.done)return a.done?1:-1;
-      if(a.deadline&&b.deadline)return new Date(a.deadline)-new Date(b.deadline);
+      if(a.deadline&&b.deadline)return parseLocalDate(a.deadline)-parseLocalDate(b.deadline);
       if(a.deadline&&!b.deadline)return -1;
       if(!a.deadline&&b.deadline)return 1;
       return po[a.priority]-po[b.priority];

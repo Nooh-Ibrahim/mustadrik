@@ -99,7 +99,7 @@ function markDel(k,id){
   for(j=0;j<arr.length;j++)if(arr[j].id===id)i=j;
   if(i<0)return;
   var m=arr[i]; arr.splice(i,1); save(); renderCourses();
-  undoToast('حُذفت «'+esc(m.t)+'»',function(){ arr.splice(i,0,m); save(); renderCourses(); });
+  undoToast('حُذفت «'+m.t+'»',function(){ arr.splice(i,0,m); save(); renderCourses(); });
 }
 
 // ---- الواجهة: لوحة الدرجات داخل بطاقة المساق ----

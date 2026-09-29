@@ -9,7 +9,7 @@ function deleteHabit(id){
   var i=(S.habits||[]).findIndex(function(h){return h.id===id;}); if(i<0)return;
   var h=S.habits[i];
   S.habits.splice(i,1); save(); renderHabits(); updateStats();
-  undoToast('حُذفت «'+esc((h.name||'').slice(0,24))+'»',function(){
+  undoToast('حُذفت «'+(h.name||'').slice(0,24)+'»',function(){
     S.habits.splice(Math.min(i,S.habits.length),0,h); save(); renderHabits(); updateStats();
   });
 }

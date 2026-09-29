@@ -103,7 +103,7 @@ function tabBadge(pageId){
   }
   if(pageId==='tasks'){
     var todayMid=new Date(new Date().toDateString()).getTime();
-    var over=(S.tasks||[]).filter(function(t){return !t.done&&!t.archived&&t.deadline&&new Date(t.deadline).getTime()<todayMid;}).length;
+    var over=(S.tasks||[]).filter(function(t){return !t.done&&!t.archived&&t.deadline&&parseLocalDate(t.deadline).getTime()<todayMid;}).length;
     if(over>0)return '<span class="tab-badge tb-amber" title="واجبات متأخرة">'+(over>9?'9+':over)+'</span>';
   }
   return '';

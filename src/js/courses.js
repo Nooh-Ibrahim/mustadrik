@@ -73,7 +73,7 @@ function courseAddPrompt(){
   openInputDialog({title:'مساق جديد',sub:'اسم المادة أو الكورس — تقدر تغيّره وتضيف له أسابيع بعدين',placeholder:'مثلاً: CS50 أو تفاضل وتكامل',confirmText:'أضِف',onOk:function(v){
     if(v===null||!String(v).trim())return;
     var k=courseAdd(String(v).trim());
-    notify('أُضيف «'+esc(subjLabel(k))+'» ✓','plus-circle');
+    notify('أُضيف «'+subjLabel(k)+'» ✓','plus-circle');
   }});
 }
 function courseRename(k){
@@ -102,7 +102,7 @@ function courseClickProg(e,k){
 function courseArchiveToggle(k){
   var c=courseObj(k); if(!c)return;
   c.archived=!c.archived; save(); refreshCourseUI();
-  notify(c.archived?('أُرشِف «'+esc(c.label)+'» — سجلّه محفوظ'):('عاد «'+esc(c.label)+'» ✓'),c.archived?'archive':'archive-restore');
+  notify(c.archived?('أُرشِف «'+c.label+'» — سجلّه محفوظ'):('عاد «'+c.label+'» ✓'),c.archived?'archive':'archive-restore');
 }
 // ما الذي سيصير يتيماً لو حُذف هذا المساق؟ (وقت مسجَّل · مهام · مواعيد · درجات)
 function courseDeps(k){
@@ -140,7 +140,7 @@ function courseDelete(k){
   if(S.srs)delete S.srs[k];
   if(S.subjectLog)delete S.subjectLog[k];
   save(); refreshCourseUI();
-  undoToast('حُذف «'+esc(snapshot.label)+'»',function(){
+  undoToast('حُذف «'+snapshot.label+'»',function(){
     S.subjects[k]=snapshot; S.subjects[k].order=idx;
     if(!S.subjectLog)S.subjectLog={}; S.subjectLog[k]=0;
     save(); refreshCourseUI();
@@ -184,12 +184,12 @@ function courseUnitTask(k,i){
   });
   save();
   if(typeof renderTasks==='function')renderTasks();
-  actionToast('أُضيف «'+esc(title)+'» للديوان','افتح الديوان','list-plus',function(){ navTo('tasks'); });
+  actionToast('أُضيف «'+title+'» للديوان','افتح الديوان','list-plus',function(){ navTo('tasks'); });
 }
 function courseUnitDel(k,i){
   var c=courseObj(k); if(!c||!c.units[i])return;
   var u=c.units[i]; c.units.splice(i,1); save(); renderCourses();
-  undoToast('حُذفت «'+esc(u.t)+'»',function(){ c.units.splice(i,0,u); save(); renderCourses(); });
+  undoToast('حُذفت «'+u.t+'»',function(){ c.units.splice(i,0,u); save(); renderCourses(); });
 }
 // قوالب جاهزة — كلها قابلة للتعديل والحذف بعد الإضافة
 var COURSE_TEMPLATES={
@@ -206,7 +206,7 @@ function courseSeed(k,tpl){
     c.units.push({t:title,done:false}); added++;
   });
   save(); renderCourses();
-  notify('أُضيفت '+arN(added)+' وحدة من «'+esc(t.name)+'» ✓','list-plus');
+  notify('أُضيفت '+arN(added)+' وحدة من «'+t.name+'» ✓','list-plus');
 }
 
 // ===== مزامنة الواجهة: القوائم المنسدلة وتبويبات الفلترة تُبنى من الحالة =====
@@ -416,7 +416,7 @@ function deadlineAdd(){
   if(ti)ti.value=''; if(da)da.value='';
   save(); renderTerm();
   if(typeof renderExamCountdown==='function')renderExamCountdown();
-  notify('أُضيف «'+esc(title)+'» ✓','calendar-plus');
+  notify('أُضيف «'+title+'» ✓','calendar-plus');
 }
 function deadlineToggle(id){
   var d=deadlines().filter(function(x){return x.id===id;})[0]; if(!d)return;
@@ -430,7 +430,7 @@ function deadlineDel(id){
   if(i<0)return;
   var d=arr[i]; arr.splice(i,1); save(); renderTerm();
   if(typeof renderExamCountdown==='function')renderExamCountdown();
-  undoToast('حُذف «'+esc(d.title)+'»',function(){ arr.splice(i,0,d); save(); renderTerm(); if(typeof renderExamCountdown==='function')renderExamCountdown(); });
+  undoToast('حُذف «'+d.title+'»',function(){ arr.splice(i,0,d); save(); renderTerm(); if(typeof renderExamCountdown==='function')renderExamCountdown(); });
 }
 function dlDaysLeft(d){ return Math.ceil((new Date(d.date+'T'+(d.time||'08:00'))-new Date())/86400000); }
 function dlTone(n){ return n<0?'over':n<=2?'urgent':n<=7?'soon':'ok'; }

@@ -1,4 +1,4 @@
-// db.js — IndexedDB foundation for «الاستدراك» — LOAD AFTER core, BEFORE migrate/storage
+// db.js — IndexedDB foundation for Mustadrik — LOAD AFTER core, BEFORE migrate/storage
 // module 2/12 — classic script (globals shared, no ES modules). CSP unchanged.
 //
 // Design: small Promise-based wrapper + the full v2 schema. All records are isolated by
@@ -54,7 +54,7 @@ function dbOpen(){
     };
     open.onsuccess=function(){ _idb=open.result; resolve(_idb); };
     open.onerror=function(){ reject(open.error); };
-    open.onblocked=function(){ console.warn('[الاستدراك] IndexedDB open blocked (close other tabs)'); };
+    open.onblocked=function(){ console.warn('[Mustadrik] IndexedDB open blocked (close other tabs)'); };
   });
 }
 function dbReady(){ return !!_idb; }

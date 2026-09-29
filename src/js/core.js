@@ -110,14 +110,21 @@ function icons(){
 }
 // نداء فوري متزامن — لِمن يحتاج الأيقونات مرسومة قبل قياس/قراءة الـDOM
 function iconsNow(){ if(window.lucide){ try{ lucide.createIcons(); }catch(e){} } }
-function notify(msg,ic){var n=document.getElementById('notif');n.innerHTML='<i data-lucide="'+(ic||'info')+'"></i>'+msg;icons();n.classList.add('show');setTimeout(function(){n.classList.remove('show');},2500);}
+// الإشعارات تعرض نصاً خالصاً (textContent) — لا HTML: أسماء يكتبها المستخدم أو تأتي من ملف مستورد
+// لا يمكن أن تحقن وسوماً. لا تمرّر esc() لهذه الدوال.
+function toastBody(n,ic,msg){
+  n.innerHTML='<i data-lucide="'+String(ic||'info').replace(/[^a-z0-9-]/gi,'')+'"></i>';
+  var t=document.createElement('span'); t.className='notif-text'; t.textContent=String(msg==null?'':msg); n.appendChild(t);
+}
+function notify(msg,ic){var n=document.getElementById('notif');if(!n)return;toastBody(n,ic||'info',msg);icons();n.classList.add('show');clearTimeout(notify._t);notify._t=setTimeout(function(){n.classList.remove('show');},2500);}
 
 // toast «تراجَع»: الحذف يحدث فوراً + مهلة تراجُع ٦ ثوانٍ — بديل رسائل التأكيد (أسرع وأرحم)
 var _undoT=null,_undoFn=null;
 function undoToast(msg,undoFn){
   var n=document.getElementById('notif'); if(!n)return;
   _undoFn=undoFn;
-  n.innerHTML='<i data-lucide="trash-2"></i>'+msg+'<button class="undo-btn" onclick="undoNow()"><i data-lucide="undo-2"></i> تراجَع</button>';
+  toastBody(n,'trash-2',msg);
+  n.insertAdjacentHTML('beforeend','<button class="undo-btn" onclick="undoNow()"><i data-lucide="undo-2"></i> تراجَع</button>');
   icons(); n.classList.add('show');
   clearTimeout(_undoT); _undoT=setTimeout(function(){ n.classList.remove('show'); _undoFn=null; },6000);
 }
@@ -130,7 +137,9 @@ function undoNow(){
 function actionToast(msg,btnLabel,ic,fn){
   var n=document.getElementById('notif'); if(!n)return;
   _undoFn=fn;
-  n.innerHTML='<i data-lucide="'+(ic||'sparkles')+'"></i>'+msg+'<button class="undo-btn" onclick="undoNow()"><i data-lucide="check"></i> '+btnLabel+'</button>';
+  toastBody(n,ic||'sparkles',msg);
+  var b=document.createElement('button'); b.className='undo-btn'; b.setAttribute('onclick','undoNow()');
+  b.innerHTML='<i data-lucide="check"></i> '; b.appendChild(document.createTextNode(String(btnLabel||''))); n.appendChild(b);
   icons(); n.classList.add('show');
   clearTimeout(_undoT); _undoT=setTimeout(function(){ n.classList.remove('show'); _undoFn=null; },7000);
 }
@@ -138,6 +147,12 @@ function actionToast(msg,btnLabel,ic,fn){
 function pad2(n){ return (n<10?'0':'')+n; }
 // تاريخ محلي YYYY-MM-DD — بدل toISOString().slice(0,10) الذي يُرجع يوم UTC (يتأخر يوماً بعد منتصف الليل محلياً)
 function localDateKey(d){ d=d||new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+// «YYYY-MM-DD» (حقل <input type=date>) → منتصف الليل المحلي. new Date('2026-10-10') يُفسَّر UTC،
+// فيقع في اليوم السابق غرب غرينتش (كان الواجب يظهر «متأخراً» صباح يوم استحقاقه).
+function parseLocalDate(s){
+  if(typeof s==='string'){ var m=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s.trim()); if(m)return new Date(+m[1],+m[2]-1,+m[3]); }
+  return new Date(s);
+}
 function todayKey(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
 // بداية الأسبوع = السبت (إصلاح: كان الأحد — والأسبوع المصري يبدأ السبت)
 function weekStartKey(){var d=new Date();d.setDate(d.getDate()-((d.getDay()+1)%7));return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}

@@ -20,7 +20,7 @@ function save(){
   }catch(e){
     // storage full / blocked
     try{notify('تعذّر الحفظ — قد تكون الذاكرة ممتلئة','x-circle');}catch(_){}
-    console.error('[الاستدراك] save failed:',e);
+    console.error('[Mustadrik] save failed:',e);
   }
 }
 // تنظيف المهام المُنجزة منذ أكثر من ٣٠ يوماً — بتاريخ الإنجاز (doneAt)، لا بتاريخ الإنشاء (id):
@@ -88,12 +88,12 @@ function loadFromLocal(){
   try{
     const raw=localStorage.getItem(LS_STATE_KEY)||localStorage.getItem(LS_LEGACY_V3_KEY);
     if(raw)loaded=parseState(raw);
-  }catch(e){console.warn('[الاستدراك] primary store corrupt:',e.message);}
+  }catch(e){console.warn('[Mustadrik] primary store corrupt:',e.message);}
   if(!loaded){
     try{
       const m=localStorage.getItem(LS_MIRROR_KEY);
       if(m){loaded=parseState(m);recovered=true;}
-    }catch(e){console.warn('[الاستدراك] mirror also corrupt:',e.message);}
+    }catch(e){console.warn('[Mustadrik] mirror also corrupt:',e.message);}
   }
   return {loaded:loaded,recovered:recovered};
 }
@@ -151,7 +151,7 @@ function loadAsync(){
     var r=loadFromLocal(); applyState(r.loaded,r.recovered);
     if(r.loaded&&typeof dbReady==='function'&&dbReady()){ try{ dbPut('profileState',{profileId:activeProfileId,state:S}); }catch(e){} }
   }).catch(function(e){
-    console.warn('[الاستدراك] loadAsync failed; using localStorage:',e&&e.message);
+    console.warn('[Mustadrik] loadAsync failed; using localStorage:',e&&e.message);
     var r=loadFromLocal(); applyState(r.loaded,r.recovered);
   });
 }
@@ -188,7 +188,7 @@ function migrate(s){
   if(typeof s.lastWeekTotal!=='number')s.lastWeekTotal=0;
   if(!s.streakMercy||typeof s.streakMercy!=='object')s.streakMercy={week:'',used:false};   // رحمة السلسلة (غفران انقطاع يوم/أسبوع)
   if(!s.taskSortMode)s.taskSortMode='auto';
-  // ---- v2 «الاستدراك» customization defaults (gradient/cards, سعي durations, dashboard order, accordion) ----
+  // ---- v2 customization defaults (gradient/cards, سعي durations, dashboard order, accordion) ----
   if(s.settings){
     if(!s.settings.gradient)s.settings.gradient={on:false,c1:'#5750d8',c2:'#0d9488',intensity:0.16,both:false,target:'bg',angle:135,animate:false};
     else{ if(s.settings.gradient.target==null)s.settings.gradient.target='bg'; if(s.settings.gradient.angle==null)s.settings.gradient.angle=135; if(s.settings.gradient.animate==null)s.settings.gradient.animate=false; }

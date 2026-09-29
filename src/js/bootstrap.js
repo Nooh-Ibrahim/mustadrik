@@ -61,7 +61,7 @@ function initV10(){
   }
   if(typeof dmBootstrap==='function'){
     dmBootstrap().then(finish).catch(function(e){
-      console.error('[الاستدراك] DB init failed; falling back to localStorage:',e);
+      console.error('[Mustadrik] DB init failed; falling back to localStorage:',e);
       finish();
     });
   }else{

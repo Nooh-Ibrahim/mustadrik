@@ -48,6 +48,15 @@ test('localDateKey() uses the LOCAL calendar day, zero-padded', () => {
   assert.equal(ctx.localDateKey(new Date(2026, 11, 31, 23, 59)), '2026-12-31');
 });
 
+test('parseLocalDate() reads <input type=date> values as LOCAL midnight (not UTC)', () => {
+  const d = ctx.parseLocalDate('2026-10-10');
+  assert.equal(d.getFullYear(), 2026); assert.equal(d.getMonth(), 9); assert.equal(d.getDate(), 10);
+  assert.equal(d.getHours(), 0);
+  assert.equal(ctx.parseLocalDate('2026-1-5').getDate(), 5);
+  assert.ok(isNaN(ctx.parseLocalDate('')));
+  assert.equal(ctx.parseLocalDate(1790000000000).getTime(), 1790000000000);
+});
+
 test('methodForCountry() suggests the local authority, MWL otherwise', () => {
   assert.equal(ctx.methodForCountry('Egypt'), 5);
   assert.equal(ctx.methodForCountry('مصر'), 5);

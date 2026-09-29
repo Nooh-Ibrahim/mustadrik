@@ -35,7 +35,7 @@ function autoSyncPullCheck(){
     if(!remote||!remote.data)return;
     if(remote.device===syncDeviceId())return;                 // نسختنا نحن — تجاهل
     if((remote.updatedAt||0)<=syncStamp())return;             // ليست أحدث ممّا نعرف
-    askConfirm('وجدت نسخة أحدث على المزامنة'+(remote.name?(' (من: '+esc(remote.name)+')'):'')+
+    askConfirm('وجدت نسخة أحدث على المزامنة'+(remote.name?(' (من: '+remote.name+')'):'')+
       ' بتاريخ '+new Date(remote.updatedAt).toLocaleString('ar-EG')+'. تحميلها فوق بياناتك الحالية على هذا الجهاز؟',
       function(){ applySyncedData(remote); },
       {confirmText:'نعم، حمّل الأحدث',danger:false});
