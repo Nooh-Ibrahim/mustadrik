@@ -196,7 +196,7 @@ function maqasidData(){
 function maqasidRing(pct){
   var deg=Math.max(0,Math.min(360,Math.round(pct*3.6)));
   var g='conic-gradient(#ef4444 0deg,#f59e0b '+(deg*0.5)+'deg,#16a34a '+deg+'deg,var(--surface3) '+deg+'deg)';
-  return '<div class="mq-ring" style="background:'+g+'"><div class="mq-ring-in"><span class="mq-ring-pct">'+pct+'%</span></div></div>';
+  return '<div class="mq-ring" style="background:'+g+'"><div class="mq-ring-in"><span class="mq-ring-pct">'+arDigits(pct+'%')+'</span></div></div>';
 }
 function renderMaqasid(){
   var d=maqasidData();
@@ -205,10 +205,10 @@ function renderMaqasid(){
     el.innerHTML='<div class="card-title"><i data-lucide="target"></i> المقاصد — هدف الوقت</div>'+
       '<div class="mq-grid">'+
         '<div class="mq-day">'+maqasidRing(d.dayPct)+
-          '<div class="mq-meta"><div class="mq-meta-t">اليوم</div><div class="mq-meta-v">'+d.todayMin+' / '+d.dailyMin+' د</div>'+
+          '<div class="mq-meta"><div class="mq-meta-t">اليوم</div><div class="mq-meta-v">'+arDigits(d.todayMin+' / '+d.dailyMin)+' د</div>'+
             (mini?'':'<input class="mq-goal-inp" type="number" min="30" max="600" step="10" value="'+d.dailyMin+'" onchange="setMaqasidGoal(\'daily\',this.value)" title="هدف اليوم (دقائق)">')+
           '</div></div>'+
-        '<div class="mq-week"><div class="mq-week-top"><span><i data-lucide="calendar-days" style="width:13px;height:13px"></i> الأسبوع</span><span class="mq-week-v">'+d.weekMin+' / '+d.weeklyMin+' د · '+d.weekPct+'%</span></div>'+
+        '<div class="mq-week"><div class="mq-week-top"><span><i data-lucide="calendar-days" style="width:13px;height:13px"></i> الأسبوع</span><span class="mq-week-v">'+arDigits(d.weekMin+' / '+d.weeklyMin+' د · '+d.weekPct+'%')+'</span></div>'+
           '<div class="mq-week-track"><div class="mq-week-fill" style="width:'+d.weekPct+'%;background:'+maqasidColor(d.weekPct)+'"></div></div>'+
           (mini?'':'<div class="mq-week-edit">هدف الأسبوع: <input class="mq-goal-inp" type="number" min="60" max="3000" step="30" value="'+d.weeklyMin+'" onchange="setMaqasidGoal(\'weekly\',this.value)"> دقيقة</div>')+
         '</div>'+
@@ -256,7 +256,7 @@ function renderHomeGoal(){
   var gmin=(S.goals&&S.goals.dailyMin)||120;
   var tmin=S.activityLog[todayKey()]||0;
   var gp=Math.min(100,Math.round(tmin/gmin*100));
-  el.innerHTML='<div class="home-goal-top"><span><i data-lucide="flag"></i> هدف اليوم</span><span class="home-goal-val">'+tmin+' / '+gmin+' د · '+gp+'%</span></div>'+
+  el.innerHTML='<div class="home-goal-top"><span><i data-lucide="flag"></i> هدف اليوم</span><span class="home-goal-val">'+arDigits(tmin+' / '+gmin+' د · '+gp+'%')+'</span></div>'+
     '<div class="progress-track"><div class="progress-fill" style="width:'+gp+'%;background:var(--accent)"></div></div>';
 }
 
@@ -532,7 +532,7 @@ function showWeeklyReport(){
   body.innerHTML=
     '<div class="wr-grid">'+
     '<div class="wr-card"><div class="wr-icon">⏱</div><div class="wr-val">'+weekHours+'</div><div class="wr-lbl">ساعة دراسة</div></div>'+
-    '<div class="wr-card"><div class="wr-icon">🕌</div><div class="wr-val">'+prayerWeekPct+'%</div><div class="wr-lbl">صلوات في وقتها</div></div>'+
+    '<div class="wr-card"><div class="wr-icon">🕌</div><div class="wr-val">'+arDigits(prayerWeekPct+'%')+'</div><div class="wr-lbl">صلوات في وقتها</div></div>'+
     '<div class="wr-card"><div class="wr-icon">📖</div><div class="wr-val">'+quranPages+'</div><div class="wr-lbl">صفحة قرآن</div></div>'+
     '<div class="wr-card"><div class="wr-icon">✅</div><div class="wr-val">'+tasksWeek+'</div><div class="wr-lbl">واجب مُنجَز</div></div>'+
     '</div>'+
@@ -575,7 +575,7 @@ function updatePrayerStatusBar(){
   if(period)period.innerHTML='<span style="color:'+color+';font-weight:700">'+current.name+'</span>';
   var nextEl=document.getElementById('psb-next');
   if(nextEl){
-    if(next){var diff=Math.max(0,Math.round((next.t-now)/60000));var dtxt=diff<60?diff+' د':''+Math.floor(diff/60)+' س '+diff%60+' د';nextEl.innerHTML='<i data-lucide="chevron-left" style="width:13px;height:13px"></i> '+next.name+' <b>'+next.t.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})+'</b> ('+dtxt+')';}
+    if(next){var diff=Math.max(0,Math.round((next.t-now)/60000));var dtxt=arDigits(diff<60?diff+' د':''+Math.floor(diff/60)+' س '+diff%60+' د');nextEl.innerHTML='<i data-lucide="chevron-left" style="width:13px;height:13px"></i> '+next.name+' <b>'+next.t.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})+'</b> ('+dtxt+')';}
     else{nextEl.textContent='';}
   }
   icons();
@@ -591,7 +591,7 @@ function updateGoalBar(){
   var fill=document.getElementById('goal-fill');
   var txt=document.getElementById('goal-text');
   if(fill)fill.style.width=p+'%';
-  if(txt)txt.textContent=todayMin+' / '+g+' دقيقة ('+p+'%)';
+  if(txt)txt.textContent=arDigits(todayMin+' / '+g+' دقيقة ('+p+'%)');
 }
 function updateWeekGoalBar(){
   var wm=(S.goals&&S.goals.weeklyMin)||600;
@@ -602,5 +602,5 @@ function updateWeekGoalBar(){
   var fill=document.getElementById('goal-week-fill');
   var txt=document.getElementById('goal-week-text');
   if(fill)fill.style.width=p+'%';
-  if(txt)txt.textContent=weekMin+' / '+wm+' دقيقة ('+p+'%)';
+  if(txt)txt.textContent=arDigits(weekMin+' / '+wm+' دقيقة ('+p+'%)');
 }

@@ -38,9 +38,9 @@ function renderSa3iPlan(){
   cfg.rounds=p.sessions;                                        // الكتلة الكاملة = راحة طويلة بعدها
   var rd=document.getElementById('rounds-input'); if(rd)rd.value=p.sessions;
   var el=document.getElementById('sa3i-block-plan'); if(!el)return;
-  var fit=p.left>0?(' · يتبقّى '+p.left+' د'):(p.left<0?' · <span class="plan-over">تجاوز الكتلة!</span>':' · مضبوطة تماماً');
-  el.innerHTML='<i data-lucide="calculator"></i> <b>'+p.sessions+'</b> جلسة × '+p.work+' د'+
-    (p.sessions>1?(' + '+(p.sessions-1)+' راحة × '+p.brk+' د'):'')+' = '+p.used+' د'+fit;
+  var fit=p.left>0?(' · يتبقّى '+arDigits(p.left)+' د'):(p.left<0?' · <span class="plan-over">تجاوز الكتلة!</span>':' · مضبوطة تماماً');
+  el.innerHTML='<i data-lucide="calculator"></i> <b>'+arDigits(p.sessions)+'</b> جلسة × '+arDigits(p.work)+' د'+
+    (p.sessions>1?(' + '+arDigits(p.sessions-1)+' راحة × '+arDigits(p.brk)+' د'):'')+' = '+arDigits(p.used)+' د'+fit;
   icons();
 }
 // Timer
@@ -87,7 +87,7 @@ function renderSa3iSettings(){
   setv('longbreak-dur',cfg.longBreak); setv('rounds-input',cfg.rounds);
   var lbe=document.getElementById('longbreak-enabled-chk'); if(lbe)lbe.checked=!!cfg.longBreakEnabled;
   var as=document.getElementById('autostart-chk'); if(as)as.checked=!!cfg.autoStart;
-  settxt('round-count',sa3iRound);
+  settxt('round-count',arDigits(sa3iRound));
   var sn=document.getElementById('timer-shownum-chk'); if(sn)sn.checked=!(S.settings&&S.settings.timerShowNum===false);
   if(typeof renderTimerStyleCtrl==='function')renderTimerStyleCtrl();
   if(typeof renderFocusModeCtrl==='function')renderFocusModeCtrl();
@@ -160,7 +160,7 @@ function startTimer(){
         // round bookkeeping → decide whether the next break is a long one (الراحة الطويلة اختيارية)
         var cfg=getSa3iCfg();
         sa3iRound++; isLongBreak=(cfg.longBreakEnabled && cfg.rounds>0 && sa3iRound%cfg.rounds===0);
-        var rc=document.getElementById('round-count');if(rc)rc.textContent=sa3iRound;
+        var rc=document.getElementById('round-count');if(rc)rc.textContent=arDigits(sa3iRound);
         save();updateSessionCount();updateStats();updateGoalBar();renderWeekChart();renderHeatmap();renderSubjChart();renderAnalytics();playBeep();celebrate();checkAchievements();
         notifyDesktop('انتهت جلسة السعي! 🎉',withName('أحسنت')+' — أنجزت '+arN(dur)+' دقيقة تركيز. '+(isLongBreak?'خذ راحة طويلة تستحقها.':'خذ راحة قصيرة.'));
         stopBubbles();recordSa3iSession(dur,subjKey);     // persist session to IndexedDB + bump task actual + rating
@@ -185,7 +185,7 @@ function pauseTimer(){
   document.getElementById('btn-start').style.display='';document.getElementById('btn-pause').style.display='none';stopAmbient();stopBubbles();
 }
 function resetTimer(){clearInterval(timerInterval);isRunning=false;isBreak=false;isLongBreak=false;timeLeft=getWorkDur();expectedEndTime=0;document.body.classList.remove('in-session');updateDisplay();document.getElementById('btn-start').style.display='';document.getElementById('btn-pause').style.display='none';document.getElementById('timer-label').innerHTML='<i data-lucide="book-open"></i> جلسة سعي';stopAmbient();stopBubbles();icons();}
-function updateDisplay(){var m=Math.floor(timeLeft/60),s=timeLeft%60;document.getElementById('timer-display').textContent=(m<10?'0':'')+m+':'+(s<10?'0':'')+s;updateTimerVisual();var bc=document.getElementById('break-controls');if(bc)bc.style.display=isBreak?'flex':'none';syncTaskbarProgress();if(typeof twSync==='function')twSync();}
+function updateDisplay(){var m=Math.floor(timeLeft/60),s=timeLeft%60;document.getElementById('timer-display').textContent=arDigits((m<10?'0':'')+m+':'+(s<10?'0':'')+s);updateTimerVisual();var bc=document.getElementById('break-controls');if(bc)bc.style.display=isBreak?'flex':'none';syncTaskbarProgress();if(typeof twSync==='function')twSync();}
 // تقدّم الجلسة في شريط مهام ويندوز (عون لعمى الوقت — يبقى مرئياً والتطبيق مصغّر)
 function syncTaskbarProgress(){
   try{
@@ -208,7 +208,7 @@ function extendBreak(){
   if(!isBreak)return;
   timeLeft+=5*60; if(isRunning)expectedEndTime+=5*60*1000; updateDisplay();
 }
-function updateSessionCount(){document.getElementById('sess-count').textContent=S.sessions;}
+function updateSessionCount(){document.getElementById('sess-count').textContent=arDigits(S.sessions||0);}
 /* toggleFocus (deep version) is defined in the FOCUS MODE section below */
 function playBeep(){try{var c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=660;g.gain.value=0.3;o.start();g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+1);o.stop(c.currentTime+1);}catch(e){}}
 // ===== مكافأة حسّية فورية (ADHD): نقرة ميكانيكية مريحة + وميض عند إتمام خطوة =====
@@ -470,7 +470,7 @@ function renderSa3iLog(){
       var subj=((S.subjects&&S.subjects[s.subject])||{label:(s.subject==='gen'?'عام':s.subject)}).label;
       var d=new Date(s.end), stars=s.focusRating?'★★★★★'.slice(0,s.focusRating):'—';
       return '<div class="sa3i-log-row"><div class="slr-main"><div class="slr-top">'+(s.taskName?esc(s.taskName):('جلسة '+subj))+'</div>'+
-        '<div class="slr-sub">'+d.toLocaleDateString('ar-EG',{day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})+' · '+s.durationMin+' د'+(s.note?(' · '+esc(s.note)):'')+'</div></div>'+
+        '<div class="slr-sub">'+d.toLocaleDateString('ar-EG',{day:'numeric',month:'short'})+' · '+d.toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'})+' · '+arDigits(s.durationMin)+' د'+(s.note?(' · '+esc(s.note)):'')+'</div></div>'+
         '<div class="slr-stars" title="تقييم التركيز">'+stars+'</div></div>';
     }).join(''); icons();
   }

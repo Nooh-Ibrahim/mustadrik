@@ -132,7 +132,7 @@ function renderPrayerTrack(){
   PRAYER_KEYS.forEach(function(k){html+='<div class="pt-cell-h">'+PRAYER_AR[k]+'</div>';});
   days.forEach(function(d){
     var dk=ptDKey(d),isToday=dk===todayK,future=(d-now>0)&&!isToday;
-    html+='<div class="pt-day'+(isToday?' today':'')+'">'+DAYS_AR[d.getDay()]+'<span>'+d.getDate()+'/'+(d.getMonth()+1)+'</span></div>';
+    html+='<div class="pt-day'+(isToday?' today':'')+'">'+DAYS_AR[d.getDay()]+'<span>'+arDigits(d.getDate()+'/'+(d.getMonth()+1))+'</span></div>';
     PRAYER_KEYS.forEach(function(k){
       var st=getPT(dk,k).status;
       if(future){html+='<div class="pt-tile pt-future" title="لم يحن بعد"></div>';}
@@ -167,7 +167,7 @@ function renderPrayerStats(){
   var c={jama3a:0,solo:0,late:0,qada:0,missed:0,total:0},pt=S.prayerTrack||{};
   Object.keys(pt).forEach(function(dk){PRAYER_KEYS.forEach(function(k){if(pt[dk][k]){var st=pt[dk][k].status;if(st&&st!=='none'){c[st]=(c[st]||0)+1;c.total++;}}});});
   var onTime=c.jama3a+c.solo, rate=c.total?Math.round(onTime/c.total*100):0;
-  el.innerHTML='<div class="pstat-rate"><div class="pstat-rate-n">'+rate+'%</div><div class="pstat-rate-l">في وقتها (جماعة/فذّ) من '+c.total+' صلاة مسجّلة</div></div>'+
+  el.innerHTML='<div class="pstat-rate"><div class="pstat-rate-n">'+arDigits(rate+'%')+'</div><div class="pstat-rate-l">في وقتها (جماعة/فذّ) من '+arDigits(c.total)+' صلاة مسجّلة</div></div>'+
     '<div class="pt-sumgrid">'+
       '<div class="pt-sum pt-jama3a"><b>'+c.jama3a+'</b>جماعة</div>'+
       '<div class="pt-sum pt-solo"><b>'+c.solo+'</b>فذّ</div>'+

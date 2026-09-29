@@ -160,6 +160,9 @@ var WEEK_ORDER=[6,0,1,2,3,4,5];   // ترتيب العرض: السبت أولا�
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 // أرقام عربية في كل نصوص الواجهة (الخلط بين ١٢٣ و123 كان يتكرر — وحّدناه في دالة واحدة)
 function arN(n){ try{ return Number(n).toLocaleString('ar-EG'); }catch(e){ return String(n); } }
+// أرقام نصّ جاهز (مثل «٠٥:٢٠» أو «٢/٥») بالأرقام العربية — للقيم الرقمية المعروضة فقط، لا لأسماء يكتبها المستخدم
+var AR_DIGITS='٠١٢٣٤٥٦٧٨٩';
+function arDigits(s){ return String(s).replace(/[0-9]/g,function(d){return AR_DIGITS[d];}); }
 // تاريخ ميلادي نظيف بالعربية (يوم شهر سنة) — بأرقام عربية متناسقة مع روح التصميم.
 function formatIslamicDate(d){
   d = d ? (d instanceof Date ? d : new Date(d)) : new Date();

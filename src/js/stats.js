@@ -90,7 +90,7 @@ function updateXP(){
     } else if(lvl.lv<S.lastXPLevel){ S.lastXPLevel=lvl.lv; }
   } else { S.lastXPLevel=lvl.lv; }
 }
-function _setTxt(id,v){ var el=document.getElementById(id); if(el)el.textContent=v; }
+function _setTxt(id,v){ var el=document.getElementById(id); if(el)el.textContent=arDigits(v); }
 function updateStats(){
   try{updateXP();}catch(e){}
   var tk=todayKey();

@@ -196,10 +196,11 @@ async function shots(outDir) {
     const c = await connect(9344);
     await waitBoot(c);
     await c.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
-    await c.evaluate(`closeOnboarding(); S=Object.assign(freshState(), ${JSON.stringify(demo.state())}); migrate(S); S.onboarded=true; save();
+    await sleep(1500);   // let the boot-time checks (restore offer, reminders) run first, then dismiss them
+    await c.evaluate(`closeOnboarding(); if(typeof closeConfirm==='function')closeConfirm(); S=Object.assign(freshState(), ${JSON.stringify(demo.state())}); migrate(S); S.onboarded=true; save();
       activeProfileName=S.profileName; rerenderAfterStateSwap(); applyProfileName(); return true;`);
     for (const shot of demo.SHOTS) {
-      await c.evaluate(shot.setup);
+      await c.evaluate('if(typeof closeConfirm==="function")closeConfirm(); if(typeof closeBadgePopup==="function")closeBadgePopup(); var n=document.getElementById("notif"); if(n)n.classList.remove("show"); ' + shot.setup);
       await sleep(shot.wait || 900);
       const r = await c.send('Page.captureScreenshot', { format: 'png' });
       const f = path.join(outDir, shot.file);

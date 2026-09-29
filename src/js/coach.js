@@ -120,7 +120,7 @@ function renderSrsCard(){
   el.style.display='';
   var top=due[0], st=srsState(top.k), label=((S.subjects&&S.subjects[top.k])||{label:top.k}).label;
   var since=st.lastReview?daysBetween(parseDayKey(st.lastReview),new Date()):null;
-  var when=since===null?'لم تُراجَع بعد':('آخر مراجعة منذ '+since+' يوم');
+  var when=since===null?'لم تُراجَع بعد':('آخر مراجعة منذ '+arN(since)+' يوم');
   el.innerHTML='<div class="srs-card-in">'+
     '<div class="srs-ic"><i data-lucide="brain-circuit"></i></div>'+
     '<div class="srs-tx"><div class="srs-ti">حان وقت مراجعة: '+esc(label)+'</div>'+

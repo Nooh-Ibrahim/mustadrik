@@ -130,11 +130,11 @@ function rolloverRecurring(){
 function deadlineBadge(dl){
   if(!dl)return '';
   var diff=Math.ceil((new Date(dl)-new Date())/(1000*60*60*24));
-  if(diff<0)return '<span class="task-deadline dl-over">انتهى منذ '+Math.abs(diff)+' يوم</span>';
+  if(diff<0)return '<span class="task-deadline dl-over">انتهى منذ '+arN(Math.abs(diff))+' يوم</span>';
   if(diff===0)return '<span class="task-deadline dl-urgent">اليوم!</span>';
-  if(diff<=2)return '<span class="task-deadline dl-urgent">'+diff+' يوم</span>';
-  if(diff<=5)return '<span class="task-deadline dl-soon">'+diff+' يوم</span>';
-  return '<span class="task-deadline dl-ok">'+diff+' يوم</span>';
+  if(diff<=2)return '<span class="task-deadline dl-urgent">'+arN(diff)+' يوم</span>';
+  if(diff<=5)return '<span class="task-deadline dl-soon">'+arN(diff)+' يوم</span>';
+  return '<span class="task-deadline dl-ok">'+arN(diff)+' يوم</span>';
 }
 // accordion (collapsible category sections) state
 function taskAcc(){ if(!S.settings)S.settings={}; if(!S.settings.taskAccordion)S.settings.taskAccordion={}; return S.settings.taskAccordion; }
@@ -160,7 +160,7 @@ function renderTaskItem(t){
       return '<div class="task-step'+(s.done?' done-step':'')+'">'+
         '<input type="checkbox" '+(s.done?'checked':'')+' onchange="toggleStep('+t.id+','+si+')">'+
         '<span class="ts-text">'+esc(s.text)+'</span>'+
-        '<span class="ts-actual" title="جلسات منجزة من المخطّطة">'+(s.actualSessions||0)+'/'+(s.sessions||1)+'</span>'+
+        '<span class="ts-actual" title="جلسات منجزة من المخطّطة">'+arDigits((s.actualSessions||0)+'/'+(s.sessions||1))+'</span>'+
         '<span class="ts-sess" title="عدد جلسات هذه الخطوة"><i data-lucide="timer"></i><input type="number" min="1" max="99" value="'+(s.sessions||1)+'" onchange="setStepSessions('+t.id+','+si+',this.value)" onclick="event.stopPropagation()"></span>'+
         '<button class="icon-btn" onclick="deleteStep('+t.id+','+si+')" title="حذف الخطوة"><i data-lucide="x"></i></button>'+
         '</div>';
@@ -189,8 +189,8 @@ function renderTaskItem(t){
         (t.highYield?'<span class="task-chip hy"><i data-lucide="target"></i> الأولى بالتقديم</span>':'')+
         (t.category?'<span class="task-chip cat">#'+esc(t.category)+'</span>':'')+
         (t.repeat&&t.repeat!=='none'?'<span class="task-chip rep"><i data-lucide="repeat"></i> '+(t.repeat==='daily'?'يومي':'أسبوعي')+'</span>':'')+
-        '<span class="task-chip eff" title="جلسات: فعلي / مُقدّر"><i data-lucide="timer"></i> '+act+'/'+t.pomo+'</span>'+
-        (stepsTotal>0?'<span class="task-chip">'+stepsDone+'/'+stepsTotal+' خطوة</span>':'')+
+        '<span class="task-chip eff" title="جلسات: فعلي / مُقدّر"><i data-lucide="timer"></i> '+arDigits(act+'/'+t.pomo)+'</span>'+
+        (stepsTotal>0?'<span class="task-chip">'+arDigits(stepsDone+'/'+stepsTotal)+' خطوة</span>':'')+
         (t.deadline&&!t.done?deadlineBadge(t.deadline):'')+
       '</div>'+
       stepsBar+
@@ -259,7 +259,7 @@ function renderTasks(){
       '<button class="task-group-head'+(open?' open':'')+'" onclick="toggleTaskAcc(\''+jsStr(key)+'\')">'+
         '<i class="tg-caret" data-lucide="chevron-left"></i>'+
         '<span class="tg-name">'+esc(key)+'</span>'+
-        '<span class="tg-count">'+done+'/'+total+'</span>'+
+        '<span class="tg-count">'+arDigits(done+'/'+total)+'</span>'+
       '</button>'+
       '<div class="task-group-body'+(open?' open':'')+'">'+items.map(renderTaskItem).join('')+'</div>'+
     '</div>';

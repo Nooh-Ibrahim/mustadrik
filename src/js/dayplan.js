@@ -3,7 +3,7 @@
 // + عدد جلسات لكل فترة + سحب مهام لإسقاطها فيها. classic script (globals shared).
 
 function dpHmToMin(hm){ if(!hm||hm.indexOf(':')<0)return null; var p=hm.split(':'); return (+p[0])*60+(+p[1]); }
-function dpFmtDur(mins){ var h=Math.floor(mins/60),m=mins%60; return (h>0?h+' س ':'')+(m>0?m+' د':(h>0?'':'0 د')); }
+function dpFmtDur(mins){ var h=Math.floor(mins/60),m=mins%60; return arDigits((h>0?h+' س ':'')+(m>0?m+' د':(h>0?'':'0 د'))); }
 var DP_PAIRS=[['fajr','dhuhr'],['dhuhr','asr'],['asr','maghrib'],['maghrib','isha'],['isha','fajr']];
 
 function dayPlanState(){
@@ -146,7 +146,7 @@ function dpTick(){
     var bars='';
     for(var i=segs;i>=1;i--){ bars+='<span class="dp-seg'+(i<=filled?' on':'')+'"></span>'; }
     var mins=Math.floor(rem/60000), hrs=Math.floor(mins/60);
-    var remTxt=hrs>0?(hrs+' س '+(mins%60)+' د'):(mins+' د');
+    var remTxt=arDigits(hrs>0?(hrs+' س '+(mins%60)+' د'):(mins+' د'));
     el.innerHTML='<div class="dp-vtimer-segs">'+bars+'</div><div class="dp-vtimer-lbl">باقٍ من الفترة<b>'+remTxt+'</b></div>';
   }
 }
