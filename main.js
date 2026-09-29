@@ -4,11 +4,14 @@ const { app, BrowserWindow, ipcMain, shell, Menu, dialog,
         Tray, nativeImage, globalShortcut, powerMonitor, Notification, screen } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const H = require('./lib/main-helpers');
 
-// ---- ثبّت مسار بيانات المستخدم على المجلد الأصلي الفعلي «noah-dashboard» (حروف صغيرة = حقل name، وهو ما استخدمته
-// النسخة القديمة فعلاً — تأكّد بالقرص) حتى لا تتيتّم البيانات عند تغيير productName إلى Mustadrik.
-// ⚠️ حرفياً «noah-dashboard» الصغيرة — مش «Noah Dashboard»؛ كل بيانات نوح (IndexedDB/localStorage/backups) هنا.
-app.setPath('userData', path.join(app.getPath('appData'), 'noah-dashboard'));
+// ---- userData: must be decided BEFORE app-ready ----
+// Existing installs keep %APPDATA%/noah-dashboard (the legacy folder, detected by the data inside it);
+// new installs get %APPDATA%/Mustadrik. --data-dir=<path> or MUSTADRIK_USER_DATA override it
+// (portable use, and running tests against a scratch copy without touching real data).
+const USER_DATA = H.resolveUserDataDir(app.getPath('appData'), { argv: process.argv, env: process.env });
+app.setPath('userData', USER_DATA.dir);
 
 // ---- single instance lock ----
 const gotLock = app.requestSingleInstanceLock();
@@ -229,19 +232,17 @@ ipcMain.on('flash-frame', () => {
   }
 });
 
-// ---- IPC: write a real backup file to disk (rolling, max 14) ----
+// renderer → main payloads are JSON text of the app state; refuse anything else (defence in depth)
+function isJsonText(s) { return typeof s === 'string' && s.length > 1 && s.length < 200 * 1024 * 1024 && s.charAt(0) === '{'; }
+
+// ---- IPC: write a real backup file to disk (one per local day, newest 14 kept) ----
 ipcMain.handle('backup-data', (e, jsonString) => {
   try {
+    if (!isJsonText(jsonString)) return { ok: false, error: 'invalid payload' };
     const dir = backupsDir();
-    const stamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD (one per day)
-    const file = path.join(dir, `noah-backup-${stamp}.json`);
+    const file = path.join(dir, H.backupFileName(new Date()));
     fs.writeFileSync(file, jsonString, 'utf8');
-    // prune: keep newest 14
-    const files = fs.readdirSync(dir)
-      .filter(f => f.startsWith('noah-backup-') && f.endsWith('.json'))
-      .map(f => ({ f, t: fs.statSync(path.join(dir, f)).mtimeMs }))
-      .sort((a, b) => b.t - a.t);
-    files.slice(14).forEach(x => { try { fs.unlinkSync(path.join(dir, x.f)); } catch (_) {} });
+    H.pruneBackups(dir, H.MAX_BACKUPS);   // counts legacy "noah-backup-*" files too
     return { ok: true, file };
   } catch (err) {
     return { ok: false, error: String(err) };
@@ -250,18 +251,7 @@ ipcMain.handle('backup-data', (e, jsonString) => {
 
 // ---- IPC: list available backups ----
 ipcMain.handle('list-backups', () => {
-  try {
-    const dir = backupsDir();
-    return fs.readdirSync(dir)
-      .filter(f => f.startsWith('noah-backup-') && f.endsWith('.json'))
-      .map(f => {
-        const st = fs.statSync(path.join(dir, f));
-        return { name: f, mtime: st.mtimeMs, size: st.size };
-      })
-      .sort((a, b) => b.mtime - a.mtime);
-  } catch (err) {
-    return [];
-  }
+  try { return H.listBackups(backupsDir()); } catch (err) { return []; }
 });
 
 // ---- IPC: read latest (or named) backup content ----
@@ -269,13 +259,12 @@ ipcMain.handle('read-backup', (e, name) => {
   try {
     const dir = backupsDir();
     let target = name;
-    if (!target) {
-      const files = fs.readdirSync(dir)
-        .filter(f => f.startsWith('noah-backup-') && f.endsWith('.json'))
-        .map(f => ({ f, t: fs.statSync(path.join(dir, f)).mtimeMs }))
-        .sort((a, b) => b.t - a.t);
+    if (target) {
+      if (!H.isBackupFileName(target)) return { ok: false, error: 'invalid backup name' };   // no path traversal
+    } else {
+      const files = H.listBackups(dir);
       if (!files.length) return { ok: false, error: 'no backups' };
-      target = files[0].f;
+      target = files[0].name;
     }
     const content = fs.readFileSync(path.join(dir, target), 'utf8');
     return { ok: true, content, name: target };
@@ -315,13 +304,17 @@ ipcMain.handle('get-backup-folder', () => {
 
 // ---- IPC: two-way folder sync — single live file in the (Drive-synced) backups folder ----
 ipcMain.handle('sync-write', (e, jsonString) => {
-  try { fs.writeFileSync(path.join(backupsDir(), 'noah-live.json'), jsonString, 'utf8'); return { ok: true }; }
+  try {
+    if (!isJsonText(jsonString)) return { ok: false, error: 'invalid payload' };
+    fs.writeFileSync(path.join(backupsDir(), H.SYNC_FILE), jsonString, 'utf8');
+    return { ok: true };
+  }
   catch (err) { return { ok: false, error: String(err) }; }
 });
 ipcMain.handle('sync-read', () => {
   try {
-    const f = path.join(backupsDir(), 'noah-live.json');
-    if (!fs.existsSync(f)) return { ok: false, empty: true };
+    const f = H.pickSyncFile(backupsDir());   // newest of the current / legacy sync file names
+    if (!f) return { ok: false, empty: true };
     return { ok: true, content: fs.readFileSync(f, 'utf8') };
   } catch (err) { return { ok: false, error: String(err) }; }
 });
@@ -329,9 +322,12 @@ ipcMain.handle('sync-read', () => {
 // ---- IPC: export-as dialog (save JSON wherever the user wants) ----
 ipcMain.handle('export-dialog', async (e, jsonString, suggestedName) => {
   try {
+    if (!isJsonText(jsonString)) return { ok: false, error: 'invalid payload' };
+    const safeName = (typeof suggestedName === 'string' && path.basename(suggestedName) === suggestedName && /\.json$/i.test(suggestedName))
+      ? suggestedName : 'mustadrik-export.json';
     const res = await dialog.showSaveDialog(mainWindow, {
       title: 'حفظ نسخة احتياطية',
-      defaultPath: suggestedName || 'noah-study.json',
+      defaultPath: safeName,
       filters: [{ name: 'JSON', extensions: ['json'] }]
     });
     if (res.canceled || !res.filePath) return { ok: false, canceled: true };
@@ -462,7 +458,7 @@ function registerHotkey() {
 }
 ipcMain.handle('set-hotkey', (e, v) => { hotkeyEnabled = !!v; registerHotkey(); return true; });
 
-// ---- idle / power awareness → renderer pauses the timer when Noah steps away ----
+// ---- idle / power awareness → renderer pauses the timer when the user steps away ----
 function startIdleWatch() {
   let idleSent = false;
   setInterval(() => {

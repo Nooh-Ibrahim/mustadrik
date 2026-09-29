@@ -1,7 +1,11 @@
 // storage.js — persistence, migration, backups, import/export
 // module 2/10 of the former renderer.js — classic script (globals shared, no ES modules)
 
+// لا حفظ قبل تحميل بيانات المستخدم: الإقلاع غير متزامن (IndexedDB)، وأي save() مبكّر كان سيكتب
+// الحالة الافتراضية الفارغة فوق الملف الحقيقي. تُرفع الراية في applyState فقط.
+var stateHydrated=false;
 function save(){
+  if(!stateHydrated)return;
   try{
     S.schemaVersion=SCHEMA_VERSION;
     const json=JSON.stringify(S);
@@ -19,15 +23,63 @@ function save(){
     console.error('[الاستدراك] save failed:',e);
   }
 }
+// تنظيف المهام المُنجزة منذ أكثر من ٣٠ يوماً — بتاريخ الإنجاز (doneAt)، لا بتاريخ الإنشاء (id):
+// كانت مهمة أُنشئت قبل ٤٠ يوماً وأُنجزت اليوم تُحذف في التشغيل التالي مباشرة.
 function cleanupOldTasks(){
   const cutoff=Date.now()-30*24*60*60*1000; // 30 days ago
   const before=(S.tasks||[]).length;
   S.tasks=(S.tasks||[]).filter(function(t){
-    if(!t.done)return true;          // keep all pending tasks
-    return (t.id||0)>cutoff;         // keep done tasks < 30 days old
+    if(!t.done)return true;                                   // keep all pending tasks
+    var ref=(typeof t.doneAt==='number'&&t.doneAt>0)?t.doneAt:(t.id||0);
+    return ref>cutoff;                                        // keep tasks finished < 30 days ago
   });
   const removed=before-S.tasks.length;
-  if(removed>0){save();console.info('[Noah] cleanupOldTasks: removed '+removed+' old done tasks');}
+  if(removed>0){save();console.info('[Mustadrik] cleanupOldTasks: removed '+removed+' old done tasks');}
+}
+// ---- تحقّق من ملف مستورد/نسخة قبل اعتمادها ----
+// الحقول المعروفة يجب أن تطابق نوع حاويتها (مصفوفة/كائن)، وإلا تُحذف فيعيد migrate() بناءها بقيمة سليمة.
+// المفاتيح غير المعروفة تُترك كما هي (توافق مع ملفات من إصدار أحدث).
+var STATE_EXTRA_TYPES={deadlines:'array',term:'object',schedule:'object',quran:'object',qiyam:'object',adhkar:'array',
+  adhkarLog:'object',adhkarDayLog:'object',worship:'object',sport:'object',med:'object',rewards:'array',rewardLog:'array',
+  qadaLife:'object',streakMercy:'object',prayerNotified:'object',taskNotified:'object',grades:'array',coreHabits:'object',coreLog:'object'};
+function stateTypeOf(v){ return Array.isArray(v)?'array':(v===null?'null':typeof v); }
+function sanitizeState(obj){
+  var ref=freshState(), dropped=[];
+  Object.keys(obj).forEach(function(k){
+    var want=Object.prototype.hasOwnProperty.call(ref,k)?stateTypeOf(ref[k]):STATE_EXTRA_TYPES[k];
+    if(!want)return;
+    var got=stateTypeOf(obj[k]);
+    var container=(want==='array'||want==='object'), gotContainer=(got==='array'||got==='object');
+    if((container&&got!==want)||(!container&&gotContainer)){ delete obj[k]; dropped.push(k); }
+  });
+  ['tasks','habits','deadlines'].forEach(function(k){
+    if(Array.isArray(obj[k]))obj[k]=obj[k].filter(function(x){ return x&&typeof x==='object'&&!Array.isArray(x); });
+  });
+  return dropped;
+}
+// ملف تصدير/نسخة قد يكون حالةً مباشرة أو غلاف مزامنة {v, data:"<json>"} — نقبل الاثنين
+function unwrapStatePayload(obj){
+  if(obj&&typeof obj.data==='string'&&obj.v!=null&&!obj.settings){ try{ var inner=JSON.parse(obj.data); if(inner&&typeof inner==='object'&&!Array.isArray(inner))return inner; }catch(e){} }
+  return obj;
+}
+function rerenderAfterStateSwap(){
+  document.body.className=S.theme; document.body.classList.toggle('dark',!!S.dark);
+  if(typeof updateDarkBtn==='function')updateDarkBtn();
+  if(typeof renderThemeDots==='function')renderThemeDots();
+  if(typeof applyBgColor==='function')applyBgColor();
+  if(typeof refreshAll==='function')refreshAll();
+  if(typeof renderSa3iSettings==='function')renderSa3iSettings();
+  if(typeof applyLogo==='function')applyLogo();
+  if(typeof renderSettingsPage==='function')renderSettingsPage();
+}
+// استبدال الحالة كاملةً (استيراد/استعادة): لقطة لحالتك الحالية أولاً (قابلة للاستعادة من «اللقطات»)،
+// ثم استبدال نظيف فوق الحالة الافتراضية — لا دمج (الدمج كان يُبقي مفاتيح قديمة لم تكن في الملف).
+function replaceState(obj,snapLabel){
+  obj=unwrapStatePayload(obj);
+  sanitizeState(obj);
+  if(typeof createSnapshot==='function'){ try{ createSnapshot(snapLabel+' — '+new Date().toLocaleString('ar-EG'),'user'); }catch(e){} }
+  S=Object.assign(freshState(),obj); migrate(S); save();
+  rerenderAfterStateSwap();
 }
 function parseState(raw){var o=JSON.parse(raw);if(!o||typeof o!=='object'||Array.isArray(o))throw new Error('bad shape');return o;}
 // read state from localStorage (primary key → mirror) — returns {loaded, recovered}
@@ -48,6 +100,7 @@ function loadFromLocal(){
 // apply a loaded state into S and render (shared by both sync + async load paths)
 function applyState(loaded,recovered){
   if(loaded)S=Object.assign(S,loaded);
+  stateHydrated=true;
   migrate(S);
   cleanupOldTasks();
   if(typeof rolloverRecurring==='function')rolloverRecurring();   // reset due daily/weekly tasks
@@ -262,7 +315,7 @@ function migrate(s){
 }
 function exportData(){
   const json=JSON.stringify(S,null,2);
-  const fname='noah-study-'+new Date().toISOString().slice(0,10)+'.json';
+  const fname='mustadrik-export-'+localDateKey()+'.json';
   S.lastExportDate=new Date().toISOString();save();
   if(window.noahAPI&&window.noahAPI.exportDialog){
     window.noahAPI.exportDialog(json,fname).then(function(res){
@@ -281,21 +334,20 @@ function importData(e){
   r.onload=function(ev){
     try{
       var obj=parseState(ev.target.result);
-      S=Object.assign({},S,obj);migrate(S);save();
-      document.body.className=S.theme;document.body.classList.toggle('dark',!!S.dark);
-      updateDarkBtn();renderThemeDots();refreshAll();
-      notify('تم الاستيراد بنجاح','check-circle');
+      replaceState(obj,'قبل الاستيراد');
+      notify('تم الاستيراد بنجاح — حالتك السابقة محفوظة في «اللقطات»','check-circle');
     }catch(err){notify('ملف غير صالح','x-circle');}
   };
   r.readAsText(f);
+  try{ e.target.value=''; }catch(_){}   // يسمح باستيراد الملف نفسه مرّة أخرى
 }
 
 // ===== BACKUPS (Electron disk) + REMINDERS =====
 function maybeBackup(json){
   try{
     if(!(window.noahAPI&&window.noahAPI.backupData))return;
-    const today=new Date().toISOString().slice(0,10);
-    if(S.lastBackupDate===today)return;       // one disk backup per day
+    const today=localDateKey();
+    if(S.lastBackupDate===today)return;       // one disk backup per (local) day
     S.lastBackupDate=today;                    // set in-memory (persists on next save)
     window.noahAPI.backupData(json).catch(function(){});
   }catch(e){}
@@ -303,7 +355,7 @@ function maybeBackup(json){
 function backupNow(){
   if(!(window.noahAPI&&window.noahAPI.backupData)){ notify('النسخ على القرص متاح في تطبيق سطح المكتب فقط','info'); return; }
   window.noahAPI.backupData(JSON.stringify(S)).then(function(res){
-    if(res&&res.ok){ S.lastBackupDate=new Date().toISOString().slice(0,10); updateBackupStatus(); notify('تم حفظ نسخة احتياطية على جهازك ✓','shield-check'); }
+    if(res&&res.ok){ S.lastBackupDate=localDateKey(); updateBackupStatus(); notify('تم حفظ نسخة احتياطية على جهازك ✓','shield-check'); }
     else notify('تعذّر النسخ الاحتياطي','x-circle');
   }).catch(function(){ notify('تعذّر النسخ الاحتياطي','x-circle'); });
 }
@@ -314,9 +366,7 @@ function doRestore(){
     if(!res||!res.ok){ notify('لا توجد نسخ احتياطية محفوظة','x-circle'); return; }
     try{
       const obj=parseState(res.content);
-      S=Object.assign({},S,obj);migrate(S);save();
-      document.body.className=S.theme;document.body.classList.toggle('dark',!!S.dark);
-      updateDarkBtn();renderThemeDots();refreshAll();
+      replaceState(obj,'قبل الاستعادة من نسخة القرص');
       notify('تمت الاستعادة من '+(res.name||'النسخة')+' ✓','shield-check');
     }catch(e){ notify('النسخة الاحتياطية تالفة','x-circle'); }
   }).catch(function(){ notify('تعذّرت الاستعادة','x-circle'); });

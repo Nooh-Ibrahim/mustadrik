@@ -24,6 +24,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "lib/**/*",
       "src/**/*"
     ],
     "extraResources": [
@@ -61,4 +62,3 @@
     "electron-updater": "^6.8.9"
   }
 }
-

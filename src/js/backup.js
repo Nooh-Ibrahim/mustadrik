@@ -49,12 +49,8 @@ function restoreSnapshot(id){
     dbGet('snapshots',id).then(function(s){
       if(!s||!s.json){ notify('اللقطة غير موجودة','x-circle'); return; }
       try{
-        var obj=JSON.parse(s.json); S=Object.assign(freshState(),obj); migrate(S); save();
-        document.body.className=S.theme; document.body.classList.toggle('dark',!!S.dark);
-        updateDarkBtn(); renderThemeDots(); if(typeof applyBgColor==='function')applyBgColor(); refreshAll();
-        if(typeof renderSa3iSettings==='function')renderSa3iSettings();
-        if(typeof applyLogo==='function')applyLogo();
-        if(typeof renderSettingsPage==='function')renderSettingsPage();
+        var obj=JSON.parse(s.json);
+        replaceState(obj,'قبل استعادة لقطة');   // لقطة لحالتك الحالية أولاً — فالاستعادة نفسها قابلة للتراجع
         notify('تمت الاستعادة من اللقطة ✓','shield-check');
       }catch(e){ notify('اللقطة تالفة','x-circle'); }
     }).catch(function(){ notify('تعذّرت الاستعادة','x-circle'); });

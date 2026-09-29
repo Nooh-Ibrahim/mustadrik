@@ -44,6 +44,8 @@ function autoSyncPullCheck(){
 function applySyncedData(remote){
   try{
     var obj=JSON.parse(remote.data);
+    if(!obj||typeof obj!=='object'||Array.isArray(obj))throw new Error('bad sync payload');
+    if(typeof sanitizeState==='function')sanitizeState(obj);
     // 🛡️ احفظ لقطة لحالتك الحالية قبل الكتابة فوقها — فأي سحبة مزامنة خاطئة قابلة للتراجع (تظهر في «اللقطات»)
     if(typeof createSnapshot==='function')createSnapshot('قبل سحب مزامنة — '+new Date().toLocaleString('ar-EG'),'sync');
     S=Object.assign(freshState(),obj); if(typeof migrate==='function')migrate(S);
