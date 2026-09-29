@@ -493,7 +493,8 @@ function initUpdates() {
     autoUpdater.on('update-downloaded', (info) => {
       try { mainWindow.webContents.send('update-ready', info.version); } catch (_) {}
     });
-    autoUpdater.on('error', (err) => appendLog('updater', (err && err.message) || err));
+    // first line only: electron-updater errors embed full HTTP headers (cookies) that don't belong in a log
+    autoUpdater.on('error', (err) => appendLog('updater', String((err && err.message) || err).split(/\r?\n/)[0]));
     autoUpdater.checkForUpdates().catch(() => {});
     setInterval(() => { try { autoUpdater.checkForUpdates().catch(() => {}); } catch (_) {} }, 4 * 60 * 60 * 1000);
   } catch (err) { appendLog('updater', err); }

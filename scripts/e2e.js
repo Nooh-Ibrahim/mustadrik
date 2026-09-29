@@ -1,7 +1,7 @@
 'use strict';
 // scripts/e2e.js — end-to-end checks against the REAL app (main.js + renderer), never real user data.
 //
-//   node scripts/e2e.js fresh                     first run on an empty data folder
+//   node scripts/e2e.js fresh [appDir]            first run on an empty data folder (source, or dist/win-unpacked)
 //   node scripts/e2e.js upgrade <oldAppDir>       seed data with an OLDER checkout, then open it with this one
 //   node scripts/e2e.js shots [outDir]            demo data → screenshots for the README
 //
@@ -79,10 +79,11 @@ async function stop(child) {
 const waitBoot = (c) => c.evaluate('for(let i=0;i<100;i++){ if(typeof stateHydrated!=="undefined"&&stateHydrated&&document.readyState==="complete")return true; await new Promise(r=>setTimeout(r,100)); } return false;');
 
 // ---------- scenarios ----------
-async function fresh() {
+async function fresh(appDir) {
+  appDir = appDir || ROOT;   // or a packaged build folder (dist/win-unpacked)
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mustadrik-e2e-fresh-'));
-  const app = launch(ROOT, dataDir, 9341);
-  const out = { scenario: 'fresh', dataDir };
+  const app = launch(appDir, dataDir, 9341);
+  const out = { scenario: 'fresh', dataDir, app: packagedExe(appDir) || appDir };
   try {
     const c = await connect(9341);
     out.booted = await waitBoot(c);
@@ -112,6 +113,9 @@ async function fresh() {
   } finally { await stop(app); }
   out.dataDirHasIndexedDB = fs.existsSync(path.join(dataDir, 'IndexedDB'));
   out.mainErrors = mainErrors(dataDir);
+  // the updater may legitimately fail offline / before the first GitHub release exists — report it, don't fail on it
+  out.updaterNotes = out.mainErrors.filter((l) => /\[updater\]/.test(l));
+  out.mainErrors = out.mainErrors.filter((l) => !/\[updater\]/.test(l));
   out.pass = !!(out.booted && out.wizardShown && out.nameBefore === '' && !out.ritualOnTop && out.onboarded && out.method === 5 &&
     out.profileName === 'مستخدم تجريبي' && out.backupOk && /^mustadrik-backup-/.test(out.backupName || '') && out.traversalBlocked &&
     out.readBackOk && out.junkRejected && out.dataDirHasIndexedDB && out.consoleErrors.length === 0 && out.mainErrors.length === 0);
@@ -216,10 +220,10 @@ async function shots(outDir) {
   const [cmd, arg] = process.argv.slice(2);
   let res;
   try {
-    if (cmd === 'fresh') res = await fresh();
+    if (cmd === 'fresh') res = await fresh(arg && path.resolve(arg));
     else if (cmd === 'upgrade') res = await upgrade(arg && path.resolve(arg));
     else if (cmd === 'shots') res = await shots(arg);
-    else { console.log('usage: node scripts/e2e.js fresh | upgrade <oldAppDir> | shots [outDir]'); process.exit(2); }
+    else { console.log('usage: node scripts/e2e.js fresh [appDir] | upgrade <oldAppDir> | shots [outDir]'); process.exit(2); }
   } catch (e) { res = { error: String(e && e.stack || e), pass: false }; }
   console.log(JSON.stringify(res, null, 2));
   process.exit(res.pass === false ? 1 : 0);
