@@ -1,7 +1,7 @@
 // cards.js — نظام البطاقة الموحّد: كل .card في كل صفحة تحصل على مقبض سحب (ست نقط) + سهم طيّ.
 // حالة الطيّ + ترتيب البطاقات داخل كل حاوية يُحفظان في S.settings (معزولان بالملف الشخصي).
 // classic script (globals shared). يُحمّل قبل bootstrap؛ يعمل عبر MutationObserver فيزخرف أي
-// بطاقة تُنشئها أي دالة عرض على أي صفحة (طلب نوح: حرفياً في كل صفحة).
+// بطاقة تُنشئها أي دالة عرض على أي صفحة (بطلب المستخدم: حرفياً في كل صفحة).
 
 function cardCfg(){
   if(!S.settings)S.settings={};
@@ -124,7 +124,7 @@ function ensureCardTools(card){
     var lbl=document.createElement('div'); lbl.className='card-collapsed-label'; lbl.textContent=cardLabel(card); card.appendChild(lbl);
   }
   var canSpan=cardCanSpan(card);
-  var canHide=true;                                                              // زر X لكل البطاقات في كل الصفحات (طلب نوح) → بنك الأيقونات
+  var canHide=true;                                                              // زر X لكل البطاقات في كل الصفحات (بطلب المستخدم) → بنك الأيقونات
   var tools=document.createElement('div'); tools.className='card-tools';
   tools.innerHTML='<button class="card-grip" title="اسحب لإعادة الترتيب" type="button"><i data-lucide="grip-vertical"></i></button>'+
     (canSpan?'<button class="card-span" title="عرض البطاقة (عادي / عريض على كل الأعمدة)" type="button"><i data-lucide="columns-2"></i></button>':'')+
@@ -155,7 +155,7 @@ function restoreTile(key){
 }
 function applyTileHidden(){
   var th=cardCfg().tileHidden;
-  var tiles=document.querySelectorAll('[data-ckey]');                            // كل البطاقات في كل الصفحات (طلب نوح)
+  var tiles=document.querySelectorAll('[data-ckey]');                            // كل البطاقات في كل الصفحات (بطلب المستخدم)
   for(var i=0;i<tiles.length;i++){ var k=tiles[i].getAttribute('data-ckey'); tiles[i].classList.toggle('tile-hidden',!!th[k]); }
 }
 var _iconBankOpen=false;
@@ -164,7 +164,7 @@ function renderIconBank(){
   var el=document.getElementById('icon-bank'); if(!el)return;
   var th=cardCfg().tileHidden; var keys=Object.keys(th).filter(function(k){ return !REMOVED_TILES[th[k]]; });   // استبعاد المحذوفة نهائياً
   if(!keys.length){ el.innerHTML='<div class="setting-sub">لا بطاقات مخفية — اضغط ✕ على أي بلاطة لإخفائها</div>'; return; }
-  // مطويّ افتراضياً فلا تُزحم أسماء المخفيّات الإعدادات (طلب نوح) — تُدار/تُستعاد عند الفتح فقط
+  // مطويّ افتراضياً فلا تُزحم أسماء المخفيّات الإعدادات (بطلب المستخدم) — تُدار/تُستعاد عند الفتح فقط
   var chips=keys.map(function(k){
     return '<button class="bank-chip" onclick="restoreTile(\''+jsStr(k)+'\')" title="اضغط لإرجاعها للرئيسية"><i data-lucide="plus"></i> '+esc(th[k])+'</button>';
   }).join('');
@@ -214,7 +214,7 @@ function relayoutMasonry(){
     }
   }
 }
-// ===== عدد أعمدة لكل صفحة على حدة (طلب نوح: مستقلّ لكل صفحة عبر زر «تنظيم الصفحة») =====
+// ===== عدد أعمدة لكل صفحة على حدة (بطلب المستخدم: مستقلّ لكل صفحة عبر زر «تنظيم الصفحة») =====
 function pageColsCfg(){ if(!S.settings)S.settings={}; if(!S.settings.pageCols||typeof S.settings.pageCols!=='object')S.settings.pageCols={}; return S.settings.pageCols; }
 function defaultPageCols(pid){ return (pid==='page-home'||pid==='page-pomodoro'||pid==='page-settings')?2:1; }
 function pageColsVal(pid){ var c=pageColsCfg()[pid]; if(c==null)c=defaultPageCols(pid); c=parseInt(c)||1; if(c<1)c=1; if(c>5)c=5; return c; }

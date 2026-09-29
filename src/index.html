@@ -14,7 +14,7 @@
 
 <!-- شريط العنوان المخصص (نافذة Frameless) -->
 <div id="titlebar" class="titlebar">
-  <!-- أزرار النافذة أقصى اليسار: إغلاق ← تكبير/استعادة ← تصغير (طلب نوح) -->
+  <!-- أزرار النافذة أقصى اليسار: إغلاق ← تكبير/استعادة ← تصغير (بطلب المستخدم) -->
   <div class="tb-controls" id="tb-controls">
     <button class="tb-win-btn tb-close" onclick="winAction('close')" title="إغلاق"><i data-lucide="x"></i></button>
     <button class="tb-win-btn" id="tb-max-btn" onclick="winAction('maximize')" title="تكبير"><i data-lucide="square"></i></button>
@@ -89,7 +89,7 @@
   </div>
 
   <div class="page-head">
-    <div class="page-title" id="greeting"><i data-lucide="layout-dashboard"></i> أهلاً نوح</div>
+    <div class="page-title" id="greeting"><i data-lucide="layout-dashboard"></i> أهلاً بك</div>
     <div class="page-desc" id="home-date"></div>
   </div>
   <!-- مركز القيادة: ماذا الآن؟ -->
@@ -187,7 +187,7 @@
             <label>نوع التركيز (زر «تركيز»)</label>
             <div class="seg-ctrl" id="focus-mode-ctrl"></div>
           </div>
-          <!-- كتلة السعي: مدة كلية → عدد الجلسات يُحسب تلقائياً مع احتساب الراحات (طلب نوح) -->
+          <!-- كتلة السعي: مدة كلية → عدد الجلسات يُحسب تلقائياً مع احتساب الراحات (بطلب المستخدم) -->
           <div class="sa3i-set-row">
             <label>مدة الجلسة الكلية (الكتلة): <b id="block-dur-lbl">100</b> دقيقة</label>
             <div class="sa3i-set-ctrl">
@@ -274,11 +274,11 @@
   </div>
 </div>
 
-<!-- العادات والأذكار (مدمجتان — طلب نوح) -->
+<!-- العادات والأذكار (مدمجتان — بطلب المستخدم) -->
 <div class="page" id="page-habits">
   <div class="page-head"><div class="page-title"><i data-lucide="repeat"></i> المداومة</div><div class="page-desc">عاداتك وأذكارك في مكان واحد — أسبوع/شهر/سنة، وتقدر تعدّل أي يوم سابق.</div></div>
 
-  <!-- إضافة موحّدة: اختر «عادة» أو «ذِكر» (طلب نوح) -->
+  <!-- إضافة موحّدة: اختر «عادة» أو «ذِكر» (بطلب المستخدم) -->
   <div class="card" data-cid="habits-add">
     <div class="add-bar">
       <select id="md-add-type" onchange="syncAddType()" title="نوع الإضافة"><option value="habit">عادة</option><option value="dhikr">ذِكر</option></select>
@@ -365,7 +365,7 @@
   <div id="study-cal" class="stats-cal"></div>
   <div class="card" data-cid="subj-time"><div class="card-title"><i data-lucide="layers"></i> وقت الدراسة لكل مادة</div><div class="subj-chart" id="subj-time-chart"></div></div>
   <div class="card" data-cid="analytics"><div class="card-title"><i data-lucide="brain"></i> أنماط إنتاجيتك</div><div id="analytics-box"></div></div>
-  <!-- «أنشط فتراتك الصلاتية» نُقلت هنا (لها علاقة بالدراسة لا الصلاة — طلب نوح) -->
+  <!-- «أنشط فتراتك الصلاتية» نُقلت هنا (لها علاقة بالدراسة لا الصلاة — بطلب المستخدم) -->
   <div class="card" data-cid="period-insight"><div id="period-insight"></div></div>
   <div class="card" data-cid="correlation"><div class="card-title"><i data-lucide="git-compare"></i> تحليل الارتباط (آخر ٣٠ يوماً)</div><div id="correlation-box"></div></div>
 
@@ -397,7 +397,7 @@
   <div class="page-head"><div class="page-title"><i data-lucide="moon"></i> قيام الليل</div><div class="page-desc">ركعات القيام والوتر، وسلسلة لياليك</div></div>
   <div id="qiyam-body" class="tiles-cols"></div>
 </div>
-<!-- (دُمجت صفحة «الأذكار» في صفحة «العادات والأذكار» — طلب نوح) -->
+<!-- (دُمجت صفحة «الأذكار» في صفحة «العادات والأذكار» — بطلب المستخدم) -->
 <!-- (حُذفت صفحة «دراسة متقدمة» — غير مستخدمة؛ تقرير PDF انتقل إلى stats.js ويعمل من Ctrl+K) -->
 
 <!-- الصلاة (متتبّع أسبوعي واسع + قضاء) — جدول المواعيد انتقل إلى الإعدادات -->
@@ -501,13 +501,7 @@
       </div>
       <div class="setting-row">
         <div><div class="setting-label">طريقة الحساب</div></div>
-        <select id="sett-method" onchange="settChanged()">
-          <option value="4">أم القرى (مكة)</option>
-          <option value="2">مسلم للعالم الإسلامي</option>
-          <option value="1">كراتشي</option>
-          <option value="3">أمريكا الشمالية ISNA</option>
-          <option value="5">مصر</option>
-        </select>
+        <select id="sett-method" onchange="settChanged()"></select>
       </div>
       <div class="setting-row">
         <div><div class="setting-label">الجلب التلقائي الأسبوعي</div><div class="setting-sub" id="sett-last-fetch">لم يتم الجلب بعد</div></div>
@@ -745,7 +739,7 @@
   <button class="btn pri sm" onclick="closeBadgePopup()"><i data-lucide="check"></i> رائع!</button>
 </div>
 
-<!-- طبقة تشويش التركيز: نقرة في أي مكان تُلغي التركيز (طلب نوح) -->
+<!-- طبقة تشويش التركيز: نقرة في أي مكان تُلغي التركيز (بطلب المستخدم) -->
 <div id="focus-backdrop" onclick="toggleFocus()" title="اضغط في أي مكان للخروج من التركيز"></div>
 <!-- زر إلغاء التركيز العائم -->
 <button class="focus-overlay-btn" id="focus-exit-btn" onclick="toggleFocus()">

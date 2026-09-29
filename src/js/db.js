@@ -2,7 +2,7 @@
 // module 2/12 — classic script (globals shared, no ES modules). CSP unchanged.
 //
 // Design: small Promise-based wrapper + the full v2 schema. All records are isolated by
-// `profileId` (multi-profile ready; «نوح» is the protected primary). Large binaries
+// `profileId` (multi-profile ready; the primary profile is protected). Large binaries
 // (audio recordings, avatar/cover/background images) live in `mediaBlobs` as native Blobs,
 // kept separate from hot data so day/task reads stay fast.
 //

@@ -1,7 +1,7 @@
 // backup.js — المرحلة 8: لقطات مؤرّخة (Snapshots / تاريخ نسخ) + مجلد نسخ مخصّص (مزامنة Drive عبر مجلد مُزامَن)
 // module — classic script. اللقطات في مخزن IndexedDB `snapshots` (موجود منذ المرحلة 0). آمن CSP بالكامل.
 
-function snapProfile(){ return (typeof activeProfileId!=='undefined'?activeProfileId:'noah'); }
+function snapProfile(){ return curProfileId(); }
 function snapDayKey(ts){ var d=new Date(ts); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
 
 // create a point-in-time snapshot of the current profile state

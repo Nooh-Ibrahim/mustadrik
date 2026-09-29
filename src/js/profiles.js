@@ -1,12 +1,15 @@
 // profiles.js — تعدّد الملفات الشخصية (multi-profile) + الجولة التعريفية (onboarding)
 // module — classic script. كل البيانات معزولة بـ activeProfileId (مخزن profiles + profileState + المجموعات).
-// «نوح» هو الملف الأساسي المحميّ (isPrimary) — لا يُحذف.
+// الملف الأساسي (isPrimary) محميّ — لا يُحذف. اسمه يختاره المستخدم في الجولة التعريفية.
 
-var PROFILES=[], activeProfileName='نوح';
-function userName(){ return activeProfileName||'نوح'; }
+var PROFILES=[], activeProfileName='';
+// اسم المستخدم كما أدخله (قد يكون فارغاً إن تخطّى الجولة) — استخدم withName() لبناء عبارات النداء
+function userName(){ return activeProfileName||''; }
+// «أحسنت» + « يا فلان» إن وُجد اسم؛ وإلا العبارة وحدها — لا نفترض اسماً أبداً
+function withName(phrase,sep){ var n=userName(); return n?(phrase+(sep==null?' يا ':sep)+n):phrase; }
 function applyProfileName(){
-  var sub=document.querySelector('.brand-sub'); if(sub)sub.textContent='لوحة '+userName();
-  var tb=document.querySelector('.tb-title'); if(tb)tb.textContent='الاستدراك';
+  var sub=document.querySelector('.brand-sub'); if(sub)sub.textContent=userName()?('لوحة '+userName()):'رفيقك الهادئ';
+  var tb=document.querySelector('.tb-title'); if(tb)tb.textContent=APP_NAME;
   try{ if(typeof renderHome==='function')renderHome(); }catch(e){}
 }
 function refreshProfiles(){
@@ -14,12 +17,12 @@ function refreshProfiles(){
   return dbGetAll('profiles').then(function(list){
     PROFILES=list||[];
     var me=PROFILES.find(function(p){return p.id===activeProfileId;});
-    activeProfileName=(me&&me.name)|| (S&&S.profileName) ||'نوح';
+    activeProfileName=(me&&me.name)|| (S&&S.profileName) ||'';
     applyProfileName(); renderProfiles();
   }).catch(function(){});
 }
 // ===== الصور الرمزية للملفات (avatars) — Blob في mediaBlobs، img-src يسمح بـ blob: =====
-function avatarId(pid){ return 'pava-'+(pid||activeProfileId||'noah'); }
+function avatarId(pid){ return 'pava-'+(pid||curProfileId()); }
 function uploadAvatar(e,pid){
   var f=e.target&&e.target.files&&e.target.files[0]; if(!f)return;
   if(typeof mediaPut!=='function'){ notify('غير متاح هنا','x-circle'); return; }
@@ -130,30 +133,43 @@ function deleteProfile(id){
       try{ dbGetAll(store).then(function(rows){ (rows||[]).forEach(function(r){ if(r&&r.profileId===id&&typeof dbDelete==='function')dbDelete(store,r.id); }); }); }catch(e){}
     });
     if(typeof dbDelete==='function'){ dbDelete('profileState',id); dbDelete('profiles',id); }
-    var primary=(PROFILES.find(function(x){return x.isPrimary;})||{}).id||'noah';
+    var primary=(PROFILES.find(function(x){return x.isPrimary;})||{}).id||PRIMARY_PROFILE_ID;
     if(id===activeProfileId){ activeProfileId=primary; if(typeof metaSet==='function')metaSet('activeProfileId',primary); loadProfileState(primary,false); }
     refreshProfiles(); notify('حُذف الملف','trash-2');
   },{confirmText:'نعم، احذف',danger:true});
 }
 
-// ===== ONBOARDING WIZARD (gentle, calm, 5 short steps) =====
+// ===== ONBOARDING WIZARD (gentle, calm, short) =====
+// يظهر لأي ملف جديد (S.onboarded=false) — ومنه أول تشغيل على جهاز جديد. كل خطوة قابلة للتخطّي.
 var obStep=0, obState=null;
+// مجموعات المزايا التي يمكن إخفاؤها من البداية (المعرّفات = معرّفات settings.hidden المعتمدة في migrate)
+var OB_FEATURES=[
+  {key:'worship', ids:['praytrack','quran','qiyam','prayerbar'], icon:'moon',     label:'العبادات',   sub:'الصلاة وتذكيرها، القرآن، قيام الليل'},
+  {key:'sport',   ids:['sport'],                                 icon:'dumbbell', label:'الرياضة',    sub:'سجلّ تمارين بسيط'},
+  {key:'xp',      ids:['xp'],                                    icon:'map',      label:'رحلة السعي', sub:'درجات ومستويات تكافئ المداومة'}
+];
 function startOnboarding(){
   obStep=0;
-  obState={ name:(S.profileName||(activeProfileName!=='نوح'?activeProfileName:'')||''), theme:S.theme||'t-indigo',
-            city:(S.settings&&S.settings.city)||'', country:(S.settings&&S.settings.country)||'' };
+  var hidden=(S.settings&&Array.isArray(S.settings.hidden))?S.settings.hidden:[];
+  var feats={}; OB_FEATURES.forEach(function(f){ feats[f.key]=!f.ids.every(function(id){return hidden.indexOf(id)>=0;}); });
+  obState={ name:(S.profileName||activeProfileName||''), theme:S.theme||'t-terracotta', feats:feats,
+            city:(S.settings&&S.settings.city)||'', country:(S.settings&&S.settings.country)||'',
+            method:(S.settings&&S.settings.methodChosen&&S.settings.method)||0 };
   var ov=document.getElementById('onboard-overlay');
-  if(!ov){ ov=document.createElement('div'); ov.id='onboard-overlay'; ov.className='onboard-overlay'; document.body.appendChild(ov); }
+  if(!ov){ ov=document.createElement('div'); ov.id='onboard-overlay'; ov.className='onboard-overlay'; ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true'); document.body.appendChild(ov); }
   obRender(); ov.classList.add('show');
 }
 function closeOnboarding(){ var ov=document.getElementById('onboard-overlay'); if(ov)ov.classList.remove('show'); }
 var OB_STEPS=[
-  {icon:'sparkles',title:'أهلاً بك في «الاستدراك»',body:'<p>رفيقُك الهادئ للعبادة والإنتاج. فلسفتنا بسيطة:</p><div class="ob-philo"><div><b>الهدوء افتراضي</b><span>والقوة عند الطلب</span></div><div><b>🕌 الغاية</b><span>عبادتك وقربك</span></div><div><b>🛡️ الثغر</b><span>دراستك وإنتاجك</span></div></div><p class="ob-soft">خطوة صغيرة كل يوم… تكفي.</p>'},
-  {icon:'user',title:'بمَ نناديك؟',body:'<input id="ob-name" class="ob-input" placeholder="اسمك..." maxlength="24">'},
-  {icon:'palette',title:'اختر لونك',body:'<div class="ob-themes" id="ob-themes"></div>'},
-  {icon:'sun',title:'مواقيت الصلاة (اختياري)',body:'<p class="ob-soft">أدخل مدينتك لجلب المواقيت تلقائياً — أو تجاوزها وأضِفها لاحقاً.</p><div class="ob-row"><input id="ob-city" class="ob-input" placeholder="المدينة (Cairo)"><input id="ob-country" class="ob-input" placeholder="الدولة (Egypt)"></div>'},
-  {icon:'rocket',title:'كل شيء جاهز 🌿',body:'<p>تذكّر:</p><ul class="ob-tips"><li><b>Ctrl + K</b> — لوحة الأوامر والبحث الشامل في أي لحظة.</li><li><b>التفريغ الذهني</b> — فرّغ ما يشغلك ثم فرّزه لاحقاً.</li><li>كل صفحة تكشف خياراتها <b>عند الطلب</b> فقط.</li></ul>'}
+  {id:'hello', icon:'sparkles',title:'أهلاً بك في «'+APP_NAME+'»',body:'<p>رفيقُك الهادئ للعبادة والدراسة والإنجاز. فلسفتنا بسيطة:</p><div class="ob-philo"><div><b>الهدوء افتراضي</b><span>والقوة عند الطلب</span></div><div><b>🕌 الغاية</b><span>عبادتك وقربك</span></div><div><b>🛡️ الثغر</b><span>دراستك وإنتاجك</span></div></div><p class="ob-soft">بياناتك تبقى على جهازك فقط — لا حساب ولا خادم. خطوة صغيرة كل يوم… تكفي.</p>'},
+  {id:'name',  icon:'user',title:'بمَ نناديك؟',body:'<input id="ob-name" class="ob-input" placeholder="اسمك (اختياري)..." maxlength="24" aria-label="اسمك">'},
+  {id:'theme', icon:'palette',title:'اختر لونك',body:'<div class="ob-themes" id="ob-themes"></div><p class="ob-soft">يمكنك تغييره متى شئت من «الضبط».</p>'},
+  {id:'feats', icon:'layout-grid',title:'ماذا تريد أن ترى؟',body:'<p class="ob-soft">الدراسة والمهام والعادات أساسية دائماً. اختر ما تحتاجه أيضاً — ويمكنك تغييره لاحقاً من «الضبط».</p><div class="ob-feats" id="ob-feats"></div>'},
+  {id:'prayer',icon:'sun',title:'مواقيت الصلاة (اختياري)',body:'<p class="ob-soft">أدخل مدينتك ودولتك لجلب المواقيت تلقائياً من الإنترنت — أو تجاوز الخطوة وأضِفها لاحقاً.</p><div class="ob-row"><input id="ob-city" class="ob-input" placeholder="المدينة (مثلاً: Cairo)" aria-label="المدينة"><input id="ob-country" class="ob-input" placeholder="الدولة (مثلاً: Egypt)" aria-label="الدولة" oninput="obCountryChanged()"></div><label class="ob-lbl" for="ob-method">طريقة الحساب</label><select id="ob-method" class="ob-input" onchange="obState.method=parseInt(this.value,10)||0"></select>'},
+  {id:'done',  icon:'rocket',title:'كل شيء جاهز 🌿',body:'<p>تذكّر:</p><ul class="ob-tips"><li><b>Ctrl + K</b> — لوحة الأوامر والبحث الشامل في أي لحظة.</li><li><b>Shift + ?</b> — كل اختصارات لوحة المفاتيح.</li><li><b>التفريغ الذهني</b> — فرّغ ما يشغلك ثم فرّزه لاحقاً.</li><li>كل صفحة تكشف خياراتها <b>عند الطلب</b> فقط.</li></ul>'}
 ];
+// خطوة الصلاة تُتخطّى إن أخفى المستخدم العبادات
+function obStepSkipped(i){ return OB_STEPS[i].id==='prayer'&&obState&&obState.feats&&obState.feats.worship===false; }
 function obRender(){
   var ov=document.getElementById('onboard-overlay'); if(!ov)return;
   var s=OB_STEPS[obStep], last=obStep===OB_STEPS.length-1;
@@ -167,29 +183,56 @@ function obRender(){
       (last?'<button class="btn pri" onclick="obFinish()"><i data-lucide="check"></i> لنبدأ</button>'
            :'<button class="btn pri" onclick="obNext()">التالي <i data-lucide="chevron-left"></i></button>')+
     '</div></div>';
-  // hydrate inputs / theme dots
-  if(obStep===1){ var n=document.getElementById('ob-name'); if(n){n.value=obState.name||''; setTimeout(function(){n.focus();},40);} }
-  if(obStep===2){ var t=document.getElementById('ob-themes'); if(t)t.innerHTML=THEMES.map(function(th){return '<div class="ob-theme'+(obState.theme===th.id?' sel':'')+'" style="background:'+th.c+'" onclick="obPickTheme(\''+th.id+'\')"></div>';}).join(''); }
-  if(obStep===3){ var c=document.getElementById('ob-city'),co=document.getElementById('ob-country'); if(c)c.value=obState.city||''; if(co)co.value=obState.country||''; }
+  if(s.id==='name'){ var n=document.getElementById('ob-name'); if(n){n.value=obState.name||''; setTimeout(function(){n.focus();},40);} }
+  if(s.id==='theme'){ var t=document.getElementById('ob-themes'); if(t)t.innerHTML=THEMES.map(function(th){return '<button type="button" class="ob-theme'+(obState.theme===th.id?' sel':'')+'" style="background:'+th.c+'" aria-label="'+th.id.replace('t-','')+'" onclick="obPickTheme(\''+th.id+'\')"></button>';}).join(''); }
+  if(s.id==='feats'){ var fe=document.getElementById('ob-feats'); if(fe)fe.innerHTML=OB_FEATURES.map(function(f){
+      return '<label class="ob-feat"><input type="checkbox"'+(obState.feats[f.key]?' checked':'')+' onchange="obState.feats[\''+f.key+'\']=this.checked"><i data-lucide="'+f.icon+'"></i><span><b>'+f.label+'</b><small>'+f.sub+'</small></span></label>';
+    }).join(''); }
+  if(s.id==='prayer'){
+    var c=document.getElementById('ob-city'),co=document.getElementById('ob-country'),m=document.getElementById('ob-method');
+    if(c)c.value=obState.city||''; if(co)co.value=obState.country||'';
+    if(m){ var mv=obState.method||methodForCountry(obState.country); m.innerHTML=prayerMethodOptions(mv); m.value=mv; }
+  }
   icons();
 }
+// اقتراح طريقة الحساب تلقائياً من الدولة — ما لم يخترها المستخدم يدوياً
+function obCountryChanged(){
+  var co=document.getElementById('ob-country'), m=document.getElementById('ob-method'); if(!co||!m)return;
+  if(!obState.method){ m.value=methodForCountry(co.value); }
+}
 function obCapture(){
-  if(obStep===1){ var n=document.getElementById('ob-name'); if(n)obState.name=n.value.trim(); }
-  if(obStep===3){ var c=document.getElementById('ob-city'),co=document.getElementById('ob-country'); if(c)obState.city=c.value.trim(); if(co)obState.country=co.value.trim(); }
+  var s=OB_STEPS[obStep]; if(!s)return;
+  if(s.id==='name'){ var n=document.getElementById('ob-name'); if(n)obState.name=n.value.trim(); }
+  if(s.id==='prayer'){
+    var c=document.getElementById('ob-city'),co=document.getElementById('ob-country'),m=document.getElementById('ob-method');
+    if(c)obState.city=c.value.trim(); if(co)obState.country=co.value.trim();
+    if(m)obState.pickedMethod=parseInt(m.value,10)||0;
+  }
 }
 function obPickTheme(id){ obState.theme=id; document.body.className=id; if(S.dark)document.body.classList.add('dark'); obRender(); }
-function obNext(){ obCapture(); if(obStep<OB_STEPS.length-1){ obStep++; obRender(); } }
-function obPrev(){ obCapture(); if(obStep>0){ obStep--; obRender(); } }
+function obNext(){ obCapture(); var i=obStep+1; while(i<OB_STEPS.length-1&&obStepSkipped(i))i++; if(i<OB_STEPS.length){ obStep=i; obRender(); } }
+function obPrev(){ obCapture(); var i=obStep-1; while(i>0&&obStepSkipped(i))i--; if(i>=0){ obStep=i; obRender(); } }
 function obFinish(){
   obCapture();
   var name=(obState.name||'').trim();
   if(name){ S.profileName=name; activeProfileName=name; var p=PROFILES.find(function(x){return x.id===activeProfileId;}); if(p){p.name=name; if(typeof dbPut==='function')dbPut('profiles',p);} }
-  S.theme=obState.theme||'t-indigo'; document.body.className=S.theme; if(S.dark)document.body.classList.add('dark');
-  if(!S.settings)S.settings={}; if(obState.city)S.settings.city=obState.city; if(obState.country)S.settings.country=obState.country;
+  S.theme=obState.theme||'t-terracotta'; document.body.className=S.theme; if(S.dark)document.body.classList.add('dark');
+  if(!S.settings)S.settings={};
+  // المزايا: أضف/أزل معرّفات كل مجموعة من settings.hidden (بلا لمس ما أخفاه المستخدم سابقاً من غيرها)
+  var hidden=Array.isArray(S.settings.hidden)?S.settings.hidden.slice():[];
+  OB_FEATURES.forEach(function(f){
+    f.ids.forEach(function(id){ var at=hidden.indexOf(id); if(obState.feats[f.key]===false){ if(at<0)hidden.push(id); } else if(at>=0){ hidden.splice(at,1); } });
+  });
+  S.settings.hidden=hidden;
+  if(obState.feats.worship!==false){
+    if(obState.city)S.settings.city=obState.city; if(obState.country)S.settings.country=obState.country;
+    if(obState.pickedMethod){ S.settings.method=obState.pickedMethod; S.settings.methodChosen=true; S.settings.lastFetchAt=0; }
+  }
   S.onboarded=true; save();
+  if(typeof applyFeatureVisibility==='function'){ try{applyFeatureVisibility();}catch(e){} }
   if(typeof renderThemeDots==='function')renderThemeDots();
-  applyProfileName(); if(typeof refreshAll==='function')refreshAll(); if(typeof renderSettingsPage==='function')renderSettingsPage(); if(typeof renderProfiles==='function')renderProfiles();
+  applyProfileName(); if(typeof renderTopNav==='function')renderTopNav(); if(typeof refreshAll==='function')refreshAll(); if(typeof renderSettingsPage==='function')renderSettingsPage(); if(typeof renderProfiles==='function')renderProfiles();
   closeOnboarding();
-  notify('أهلاً '+userName()+' — لنبدأ 🌿','sparkles');
-  if(S.settings.city&&S.settings.country&&S.settings.autoFetch&&typeof fetchPrayerTimes==='function'){ try{fetchPrayerTimes(true);}catch(e){} }
+  notify(withName('أهلاً',' ')+' — لنبدأ 🌿','sparkles');
+  if(obState.feats.worship!==false&&S.settings.city&&S.settings.country&&S.settings.autoFetch&&typeof fetchPrayerTimes==='function'){ try{fetchPrayerTimes(true);}catch(e){} }
 }

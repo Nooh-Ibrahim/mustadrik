@@ -1,6 +1,9 @@
 // core.js — state, constants & shared helpers (icons/notify/esc/todayKey) — LOAD FIRST
 // module 1/10 of the former renderer.js — classic script (globals shared, no ES modules)
 
+// اسم التطبيق المعروض للمستخدم — مصدر واحد لكل العناوين والتقارير
+var APP_NAME='مُستدرِك';
+
 const DAYS=['sun','mon','tue','wed','thu','fri','sat'];
 const DAYS_AR=['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
 const PRAYER_KEYS=['fajr','dhuhr','asr','maghrib','isha'];
@@ -59,7 +62,14 @@ let expectedEndTime=0;
 let audioCtx=null,ambientNode=null,ambientType='none',curVol=0.5;
 let taskFilter='all',calOffset=0;
 let currentTaskName='';
-var activeProfileId='noah';   // active data profile (IndexedDB); «نوح» is the protected primary
+// المعرّف الداخلي للملف الأساسي. قيمته تاريخية ومخزّنة في قواعد بيانات المستخدمين الحاليين
+// (IndexedDB profileState/mediaBlobs) — لا تغيّرها أبداً وإلا تتيتّم بياناتهم. لا يظهر للمستخدم.
+var PRIMARY_PROFILE_ID='noah';
+var activeProfileId=PRIMARY_PROFILE_ID;   // active data profile (IndexedDB)
+function curProfileId(){ return activeProfileId||PRIMARY_PROFILE_ID; }
+// مفاتيح localStorage — أسماؤها تاريخية ومحفوظة عند المستخدمين الحاليين؛ لا تُغيَّر (مرآة احتياطية لـ IndexedDB).
+var LS_STATE_KEY='noah_v4', LS_MIRROR_KEY='noah_v4_mirror', LS_LEGACY_V3_KEY='noah_v3';
+var LS_DEVICE_ID_KEY='noah_device_id', LS_SYNC_STAMP_KEY='noah_sync_stamp';
 var taskShowArchived=false;   // بنك المهام: show archived tasks
 var currentTaskId=null;       // links a running سعي session to a task (estimated vs actual)
 var currentStepIdx=null;      // links a running session to a specific sub-step (for per-step actual count)
@@ -125,6 +135,9 @@ function actionToast(msg,btnLabel,ic,fn){
   clearTimeout(_undoT); _undoT=setTimeout(function(){ n.classList.remove('show'); _undoFn=null; },7000);
 }
 
+function pad2(n){ return (n<10?'0':'')+n; }
+// تاريخ محلي YYYY-MM-DD — بدل toISOString().slice(0,10) الذي يُرجع يوم UTC (يتأخر يوماً بعد منتصف الليل محلياً)
+function localDateKey(d){ d=d||new Date(); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
 function todayKey(){var d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
 // بداية الأسبوع = السبت (إصلاح: كان الأحد — والأسبوع المصري يبدأ السبت)
 function weekStartKey(){var d=new Date();d.setDate(d.getDate()-((d.getDay()+1)%7));return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}

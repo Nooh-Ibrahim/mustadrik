@@ -195,7 +195,7 @@ function renderTaskItem(t){
       '</div>'+
       stepsBar+
     '</div>'+
-    '<div class="task-actions">'+   // مجموعة الأدوات — تلتفّ لسطر تحت بدل scroll أفقي (طلب نوح)
+    '<div class="task-actions">'+   // مجموعة الأدوات — تلتفّ لسطر تحت بدل scroll أفقي (بطلب المستخدم)
     (!t.done&&!t.archived?'<button class="task-play-btn" onclick="startTaskTimer('+t.id+')" title="ابدأ جلسة لهذه المهمة"><i data-lucide="play-circle"></i></button>':'')+
     (!t.done&&!t.archived?'<button class="icon-btn" onclick="shredTask('+t.id+')" title="المفتت: ابدأ بخطوة ٥ دقائق"><i data-lucide="scissors"></i></button>':'')+
     '<button class="icon-btn'+(t.highYield?' hy-on':'')+'" onclick="toggleHighYield('+t.id+')" title="'+(t.highYield?'إزالة وسم الأولى بالتقديم':'وسم «الأولى بالتقديم» — أكبر أثر بأقلّ جهد')+'"><i data-lucide="target"></i></button>'+
@@ -310,11 +310,11 @@ function exportTasks(){
     return '<tr><td>'+esc(t.text)+'</td><td>'+esc(sub)+'</td><td>'+esc(t.category||'—')+'</td>'+dl+'<td>'+steps+'</td></tr>';
   }
   var d=new Date();
-  el.innerHTML='<div class="pr-head"><h1>ديوان الواجبات — '+esc(userName())+'</h1><div class="pr-date">'+formatIslamicDate(d)+'</div></div>'+
+  el.innerHTML='<div class="pr-head"><h1>ديوان الواجبات'+(userName()?' — '+esc(userName()):'')+'</h1><div class="pr-date">'+formatIslamicDate(d)+'</div></div>'+
     '<div class="pr-cards"><div class="pr-card"><b>'+open.length+'</b><span>واجبات مفتوحة</span></div><div class="pr-card"><b>'+done.length+'</b><span>منجزة</span></div></div>'+
     '<h2>المفتوحة</h2>'+(open.length?('<table class="pr-table"><tr><th>المهمة</th><th>المادة</th><th>التصنيف</th><th>التسليم</th><th>الخطوات</th></tr>'+open.map(row).join('')+'</table>'):'<p>لا واجبات مفتوحة 🎉</p>')+
     (done.length?('<h2>المنجزة</h2><table class="pr-table"><tr><th>المهمة</th><th>المادة</th><th>التصنيف</th><th>التسليم</th><th>الخطوات</th></tr>'+done.map(row).join('')+'</table>'):'')+
-    '<div class="pr-foot">مولّد محلياً من «الاستدراك» · '+d.toLocaleString('ar-EG')+'</div>';
+    '<div class="pr-foot">مولّد محلياً من «'+APP_NAME+'» · '+d.toLocaleString('ar-EG')+'</div>';
   document.body.classList.add('printing');
   setTimeout(function(){ window.print(); setTimeout(function(){document.body.classList.remove('printing');},400); },120);
 }
@@ -323,7 +323,7 @@ function copyTasksText(){
   if(!list.length){ notify('لا مهام للنسخ','info'); return; }
   var open=list.filter(function(t){return !t.done;}), done=list.filter(function(t){return t.done;});
   function line(t){ var dl=t.deadline?(' (تسليم: '+t.deadline+')'):''; return '- ['+(t.done?'x':' ')+'] '+t.text+dl; }
-  var txt='ديوان الواجبات — '+userName()+'\n'+formatIslamicDate(new Date())+'\n\n';
+  var txt='ديوان الواجبات'+(userName()?' — '+userName():'')+'\n'+formatIslamicDate(new Date())+'\n\n';
   if(open.length){ txt+='المفتوحة:\n'+open.map(line).join('\n')+'\n\n'; }
   if(done.length){ txt+='المنجزة:\n'+done.map(line).join('\n')+'\n'; }
   function ok(){ notify('نُسِخت المهام كنص ✓','clipboard-check'); }

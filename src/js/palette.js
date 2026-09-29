@@ -34,7 +34,7 @@ function togglePalette(){ paletteOpen?closePalette():openPalette(); }
 var palDocsCache=[];
 function prefetchPalDocs(){
   if(typeof dbGetAll!=='function'||typeof dbReady!=='function'||!dbReady())return;
-  var me=(typeof activeProfileId!=='undefined'?activeProfileId:'noah'); var out=[];
+  var me=curProfileId(); var out=[];
   // (أُزيلت الملاحظات من البحث — كانت توصل لصفحة «دراسة متقدمة» المحذوفة)
   dbGetAll('brainDump').then(function(rows){
     (rows||[]).forEach(function(d){ if(d&&d.profileId===me&&!d.processed&&d.type!=='audio')out.push({label:d.text,sub:'استجلاء',icon:'inbox',run:function(){navTo('braindump');}}); });

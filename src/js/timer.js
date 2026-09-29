@@ -9,7 +9,7 @@ function getSa3iCfg(){
   if(!S.settings.sa3i)S.settings.sa3i={work:20,brk:5,longBreak:15,longBreakEnabled:false,rounds:4,autoStart:true,block:100};
   var c=S.settings.sa3i;
   if(c.work==null)c.work=20; if(c.brk==null)c.brk=5; if(c.longBreak==null)c.longBreak=15;
-  if(c.longBreakEnabled==null)c.longBreakEnabled=false;   // الراحة الطويلة اختيارية (طلب نوح) — مُطفأة افتراضياً
+  if(c.longBreakEnabled==null)c.longBreakEnabled=false;   // الراحة الطويلة اختيارية (بطلب المستخدم) — مُطفأة افتراضياً
   if(c.rounds==null)c.rounds=4; if(c.autoStart==null)c.autoStart=true; if(c.block==null)c.block=100;
   return c;
 }
@@ -162,7 +162,7 @@ function startTimer(){
         sa3iRound++; isLongBreak=(cfg.longBreakEnabled && cfg.rounds>0 && sa3iRound%cfg.rounds===0);
         var rc=document.getElementById('round-count');if(rc)rc.textContent=sa3iRound;
         save();updateSessionCount();updateStats();updateGoalBar();renderWeekChart();renderHeatmap();renderSubjChart();renderAnalytics();playBeep();celebrate();checkAchievements();
-        notifyDesktop('انتهت جلسة السعي! 🎉','أحسنت يا نوح — أنجزت '+dur+' دقيقة تركيز. '+(isLongBreak?'خذ راحة طويلة تستحقها.':'خذ راحة قصيرة.'));
+        notifyDesktop('انتهت جلسة السعي! 🎉',withName('أحسنت')+' — أنجزت '+arN(dur)+' دقيقة تركيز. '+(isLongBreak?'خذ راحة طويلة تستحقها.':'خذ راحة قصيرة.'));
         stopBubbles();recordSa3iSession(dur,subjKey);     // persist session to IndexedDB + bump task actual + rating
         document.body.classList.remove('in-session');     // ينتهي وضع التركيز المُطلق مع الجلسة
         if(isLongBreak&&typeof showMindfulReward==='function'){ try{ showMindfulReward(getSa3iCfg().longBreak||15); }catch(e){} }  // المكافأة الواعية بعد دورة كاملة
@@ -306,7 +306,7 @@ function toggleFocus(){
   icons();
 }
 // ===== TASK → TIMER INTEGRATION =====
-// تحميل مهمة في المؤقّت «دون تشغيل» (طلب نوح: الضغط يضعها فقط) + إلحاقها تلقائياً بالفترة الجارية
+// تحميل مهمة في المؤقّت «دون تشغيل» (بطلب المستخدم: الضغط يضعها فقط) + إلحاقها تلقائياً بالفترة الجارية
 // المادة الحالية: اضبط مُنتقي pomo-subject على مفتاحٍ إن وُجد خياره (تحميل مهمة / استرجاع آخر مادة)
 function setPomoSubject(key){
   if(!key)return; var sel=document.getElementById('pomo-subject'); if(!sel)return;
@@ -426,7 +426,7 @@ var sessionStartTs=0, bubbleInt=null, lastSessionRec=null, rateValue=0;
 function recordSa3iSession(dur,subjKey){
   if(currentTaskId){ S.tasks=(S.tasks||[]).map(function(t){ if(t.id===currentTaskId){ t.actualSessions=(t.actualSessions||0)+1; if(currentStepIdx!=null&&t.steps&&t.steps[currentStepIdx])t.steps[currentStepIdx].actualSessions=(t.steps[currentStepIdx].actualSessions||0)+1; } return t; }); save(); try{renderTasks();}catch(e){} }
   var rec={ id:'s_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
-    profileId:(typeof activeProfileId!=='undefined'?activeProfileId:'noah'),
+    profileId:curProfileId(),
     start:sessionStartTs||(Date.now()-dur*60000), end:Date.now(), durationMin:dur,
     subject:subjKey||'gen', taskId:currentTaskId||null, taskName:currentTaskName||'',
     period:(typeof currentPeriodKey==='function'?currentPeriodKey():null),   // الفترة الصلاتية للجلسة (لإحصاء أنشط فترة)
@@ -462,7 +462,7 @@ function skipSa3iRating(){ closeSa3iRating(); renderSa3iLog(); }
 function closeSa3iRating(){ var ov=document.getElementById('sa3i-rating'); if(ov)ov.classList.remove('show'); }
 function renderSa3iLog(){
   var el=document.getElementById('sa3i-log'); if(!el)return;
-  var me=(typeof activeProfileId!=='undefined'?activeProfileId:'noah');
+  var me=curProfileId();
   function paint(list){
     list=(list||[]).filter(function(s){return s.profileId===me;}).sort(function(a,b){return b.end-a.end;}).slice(0,12);
     if(!list.length){ el.innerHTML='<div class="empty" style="padding:1rem"><i data-lucide="history"></i><div>لا جلسات بعد — ابدأ أوّل جلسة سعي</div></div>'; icons(); return; }

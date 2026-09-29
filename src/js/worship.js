@@ -54,7 +54,7 @@ function streakLogHTML(logObj,valFn,title,unit,clickFn,cid){
   var cells=keys.map(function(k){
     var v=valFn(logObj[k])||0; total+=v; if(v>0)active++;
     var lv=v<=0?0:v<3?1:v<7?2:3;
-    // الخلايا قابلة للنقر للتعديل بأثر رجعي (طلب نوح: أعدّل أي يوم بنقرة، لا بكتابة تاريخ)
+    // الخلايا قابلة للنقر للتعديل بأثر رجعي (بطلب المستخدم: أعدّل أي يوم بنقرة، لا بكتابة تاريخ)
     var click=clickFn?(' onclick="'+clickFn+'(\''+k+'\')" style="cursor:pointer" title="'+k+': '+v+' '+unit+' — اضغط للتعديل"'):(' title="'+k+': '+v+' '+unit+'"');
     return '<div class="sl-cell'+(lv?' lv'+lv:'')+'"'+click+'></div>';
   }).join('');
@@ -89,7 +89,7 @@ function renderWorshipStreaks(){
   icons();
 }
 
-// ===== عرض موحّد (أسبوع/شهر/سنة) لسجلّات العبادة + تعديل أي يوم بنقرة (طلب نوح) =====
+// ===== عرض موحّد (أسبوع/شهر/سنة) لسجلّات العبادة + تعديل أي يوم بنقرة (بطلب المستخدم) =====
 function worshipViewToggle(calId){
   calId=calId||'worship';
   var cur=(typeof calView==='function')?calView(calId):'week';
@@ -137,7 +137,7 @@ function _wLogYear(logObj,valFn,unit,editFn){
   }
   return '<div class="wl-month-title">'+y+' · إجمالي '+tot+' '+unit+'</div><div class="wl-pix-board">'+rows+'</div>';
 }
-// ===== سجلّ الأذكار لكل ذِكر على حدة (تعديل رجعي تفصيلي — طلب نوح) =====
+// ===== سجلّ الأذكار لكل ذِكر على حدة (تعديل رجعي تفصيلي — بطلب المستخدم) =====
 function adhkarDayLogObj(){ if(!S.adhkarDayLog||typeof S.adhkarDayLog!=='object')S.adhkarDayLog={}; return S.adhkarDayLog; }
 function adhkarRecomputeDay(dk){
   var L=adhkarDayLogObj(); var day=L[dk]||{}; var tot=0;
@@ -306,7 +306,7 @@ function autoAdhkarReset(){
   var changed=adhkarRollover();
   if(changed&&currentPage==='habits'){ try{ renderAdhkar(); }catch(e){} }   // الأذكار اندمجت في صفحة العادات
 }
-// ===== الأذكار — بطاقة موحّدة: ✓ يُكمل الهدف + زر +١٠ (طلب نوح: لا «اضغط للتسبيح»، لا مبدّل وضع) =====
+// ===== الأذكار — بطاقة موحّدة: ✓ يُكمل الهدف + زر +١٠ (بطلب المستخدم: لا «اضغط للتسبيح»، لا مبدّل وضع) =====
 // إعادة ترتيب الأذكار بالسحب (تُحفظ في ترتيب S.adhkar نفسه)
 var _adkDragId=null;
 function adhkarDragStart(e,id){ _adkDragId=id; if(e.dataTransfer){ e.dataTransfer.effectAllowed='move'; try{e.dataTransfer.setData('text/plain',String(id));}catch(_){} } }
@@ -346,7 +346,7 @@ function renderAdhkar(){
   // السجل (أسبوع/شهر/سنة) — اضغط أي يوم لتعديل كل ذِكر فيه على حدة (adhkarDayEditor). المبدّل العلوي يشمله.
   var log=worshipLogView(S.adhkarLog||{},function(v){return v||0;},'سجل أذكارك','تسبيحة','adhkarDayEditor',true,'adhkar');
   el.innerHTML=cards;
-  var lw=document.getElementById('adhkar-log-wrap'); if(lw)lw.innerHTML=log;   // السجل خارج حاوية الأعمدة → عرض كامل متناسق (طلب نوح)
+  var lw=document.getElementById('adhkar-log-wrap'); if(lw)lw.innerHTML=log;   // السجل خارج حاوية الأعمدة → عرض كامل متناسق (بطلب المستخدم)
   icons();
 }
 function adhkarSetTarget(v){ var n=document.getElementById('adhkar-target'); if(n)n.value=v; }
@@ -420,7 +420,7 @@ function checkPrayerReminders(){
   if(changed)save();
 }
 var _adhanCtx=null, _adhanSrc=null;
-function adhanId(){ return 'adhan-'+(typeof activeProfileId!=='undefined'?activeProfileId:'noah'); }
+function adhanId(){ return 'adhan-'+curProfileId(); }
 // تشغيل الأذان: ملف مخصّص مرفوع (عبر WebAudio decodeAudioData — آمن CSP) إن وُجد، وإلا النغمة المولّدة
 function playAdhanTone(){
   var w=worshipCfg();
@@ -472,7 +472,7 @@ function uploadAdhan(e){
   var f=e.target&&e.target.files&&e.target.files[0]; if(!f)return;
   if(typeof mediaPut!=='function'){ notify('غير متاح هنا','x-circle'); return; }
   if(!/^audio\//.test(f.type)){ notify('اختر ملفاً صوتياً','x-circle'); return; }
-  mediaPut({id:adhanId(),kind:'adhan',profileId:(typeof activeProfileId!=='undefined'?activeProfileId:'noah')},f).then(function(){
+  mediaPut({id:adhanId(),kind:'adhan',profileId:curProfileId()},f).then(function(){
     var w=worshipCfg(); w.customAdhan=true; w.adhanOn=true; save(); renderWorshipSettings();
     notify('تم تعيين الأذان المخصّص ✓','check-circle');
   }).catch(function(){ notify('تعذّر حفظ الأذان','x-circle'); });

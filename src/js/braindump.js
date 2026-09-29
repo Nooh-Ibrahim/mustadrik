@@ -3,7 +3,7 @@
 // التقاط سريع → فرز لاحق: كل عنصر يُسحب إلى «بنك المهام» (يتحوّل لمهمة) أو «سلة المهملات» (حذف مع تراجُع).
 
 var dragDumpId=null, lastDeletedDump=null, dumpUndoTimer=null;
-function dumpProfile(){ return (typeof activeProfileId!=='undefined'?activeProfileId:'noah'); }
+function dumpProfile(){ return curProfileId(); }
 
 // ---- capture ----
 function addDump(){

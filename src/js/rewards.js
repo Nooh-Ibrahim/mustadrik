@@ -1,4 +1,4 @@
-// rewards.js — «بنك المكافآت»: اصرف الدرجات المكتسبة على مكافآت يحدّدها نوح بنفسه (دافع ADHD)
+// rewards.js — «بنك المكافآت»: اصرف الدرجات المكتسبة على مكافآت يحدّدها المستخدم بنفسه (دافع ADHD)
 // classic script (globals shared, no ES modules). الرصيد القابل للصرف = getXP() − الدرجات المصروفة.
 
 function rewardsCfg(){

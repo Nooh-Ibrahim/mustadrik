@@ -4,12 +4,12 @@
 // هويّة الجهاز والطابع الزمني محلّيان (localStorage) فلا يُزامَنان — كي تعرف نسختك من نسخة الجهاز الآخر.
 
 function syncDeviceId(){
-  var v=null; try{ v=localStorage.getItem('noah_device_id'); }catch(e){}
-  if(!v){ v='dev_'+Math.random().toString(36).slice(2,10); try{localStorage.setItem('noah_device_id',v);}catch(e){} }
+  var v=null; try{ v=localStorage.getItem(LS_DEVICE_ID_KEY); }catch(e){}
+  if(!v){ v='dev_'+Math.random().toString(36).slice(2,10); try{localStorage.setItem(LS_DEVICE_ID_KEY,v);}catch(e){} }
   return v;
 }
-function syncStamp(){ var v=0; try{ v=parseInt(localStorage.getItem('noah_sync_stamp'),10)||0; }catch(e){} return v; }
-function setSyncStamp(t){ try{ localStorage.setItem('noah_sync_stamp',String(t)); }catch(e){} }
+function syncStamp(){ var v=0; try{ v=parseInt(localStorage.getItem(LS_SYNC_STAMP_KEY),10)||0; }catch(e){} return v; }
+function setSyncStamp(t){ try{ localStorage.setItem(LS_SYNC_STAMP_KEY,String(t)); }catch(e){} }
 function syncEnabled(){ if(!S.settings)S.settings={}; return !!S.settings.autoSync; }   // التفضيل يُزامَن (الجهازان يريدانها)
 function cheapHash(str){ var h=0; for(var i=0;i<str.length;i++){ h=(h*31+str.charCodeAt(i))|0; } return h; }
 
@@ -21,7 +21,7 @@ function autoSyncMaybePush(){
   if(hash===_lastPushHash)return;
   var now=Date.now();
   var payload=JSON.stringify({ v:1, updatedAt:now, device:syncDeviceId(),
-    name:(typeof userName==='function'?userName():'noah'), data:json });
+    name:(typeof userName==='function'?userName():''), data:json });
   window.noahAPI.syncWrite(payload).then(function(r){
     if(r&&r.ok){ _lastPushHash=hash; setSyncStamp(now); }
   }).catch(function(){});

@@ -2,7 +2,7 @@
 // module 3/12 — classic script (globals shared, no ES modules).
 //
 // Per owner's decision: we do NOT try to rescue legacy test data; the goal is to PROTECT
-// data going forward. This file (a) bootstraps a protected primary profile «نوح», and
+// data going forward. This file (a) bootstraps a protected primary profile (named during onboarding), and
 // (b) provides a versioned upgrade pipeline (appMeta.dataVersion → DM_STEPS) that takes a
 // rollback snapshot before each future structural change. At DATA_VERSION=1 there are no
 // steps yet — the machinery is in place for every future update.
@@ -27,20 +27,20 @@ function dmSnapshot(label){
 function dmBootstrap(){
   return dbOpen().then(function(){ return metaGet('activeProfileId'); }).then(function(active){
     if(active){ activeProfileId=active; return; }              // already initialised
-    // first ever run on IndexedDB → create the protected primary profile «نوح»
-    activeProfileId='noah';
-    return dbPut('profiles',{ id:'noah', name:'نوح', isPrimary:true, createdAt:Date.now(), avatarId:null, coverId:null })
-      .then(function(){ return metaSet('activeProfileId','noah'); })
-      .then(function(){ return metaSet('dataVersion',DATA_VERSION); })
-      .then(function(){ return metaSet('onboardingDone',true); })  // existing desktop user; wizard arrives later
-      .then(function(){
-        // Lossless continuity (optional): a legacy localStorage state has the SAME shape as S,
-        // so seeding profileState from it costs nothing and keeps the current session intact.
-        try{
-          var raw=localStorage.getItem('noah_v4')||localStorage.getItem('noah_v4_mirror');
-          if(raw){ var s=JSON.parse(raw); if(s&&typeof s==='object'&&!Array.isArray(s)) return dbPut('profileState',{ profileId:'noah', state:s }); }
-        }catch(e){}
-      });
+    // first ever run on IndexedDB → create the protected primary profile.
+    // Its display name starts EMPTY: the onboarding wizard asks for it (S.onboarded=false on a fresh state).
+    // A legacy localStorage state (pre-IndexedDB versions) is carried over losslessly — same shape as S.
+    var legacy=null;
+    try{
+      var raw=localStorage.getItem(LS_STATE_KEY)||localStorage.getItem(LS_MIRROR_KEY);
+      if(raw){ var s=JSON.parse(raw); if(s&&typeof s==='object'&&!Array.isArray(s)) legacy=s; }
+    }catch(e){}
+    activeProfileId=PRIMARY_PROFILE_ID;
+    var legacyName=(legacy&&typeof legacy.profileName==='string')?legacy.profileName:'';
+    return dbPut('profiles',{ id:PRIMARY_PROFILE_ID, name:legacyName, isPrimary:true, createdAt:Date.now(), avatarId:null, coverId:null })
+      .then(function(){ return metaSet('activeProfileId',PRIMARY_PROFILE_ID); })
+      .then(function(){ return metaSet('dataVersion',legacy?1:DATA_VERSION); })   // legacy seed → run every step
+      .then(function(){ if(legacy) return dbPut('profileState',{ profileId:PRIMARY_PROFILE_ID, state:legacy }); });
   }).then(function(){ return dmRun(); });
 }
 

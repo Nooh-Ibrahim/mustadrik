@@ -23,7 +23,7 @@ function confState(){ if(!S.confidence||typeof S.confidence!=='object')S.confide
 function riseVerseToday(){ var i=(typeof dayOfYear==='function')?dayOfYear():new Date().getDate(); return RISE_VERSES[i%RISE_VERSES.length]; }
 
 // (حُذفت صفحة «النهوض» المستقلة — اندمجت كبطاقة بالرئيسية renderRiseHome في home.js)
-// استيراد الإنجازات المفتوحة كانتصارات (طلب نوح: إرجاع زر «استورد انتصاراتي من الإنجازات»)
+// استيراد الإنجازات المفتوحة كانتصارات (بطلب المستخدم: إرجاع زر «استورد انتصاراتي من الإنجازات»)
 function seedWins(){
   var unlocked=S.unlockedBadges||[];
   var st=confState(); var existing=st.wins.map(function(w){return w.text;});

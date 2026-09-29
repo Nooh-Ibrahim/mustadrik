@@ -26,7 +26,7 @@ function addHabit(){
   document.getElementById('habit-input').value='';save();renderHabits();updateStats();
 }
 function setHabitColor(id,color){ S.habits=S.habits.map(function(h){if(h.id===id)h.color=color;return h;}); save(); renderHabits(); }
-// إضافة موحّدة: عادة أو ذِكر حسب المُنتقي (طلب نوح) — الإدخال من نفس الحقل habit-input
+// إضافة موحّدة: عادة أو ذِكر حسب المُنتقي (بطلب المستخدم) — الإدخال من نفس الحقل habit-input
 function syncAddType(){
   var t=document.getElementById('md-add-type'); var type=t?t.value:'habit';
   var tgt=document.getElementById('adhkar-target'); if(tgt)tgt.style.display=type==='dhikr'?'':'none';
@@ -46,7 +46,7 @@ function addHabitOrDhikr(){
   } else { addHabit(); }
 }
 // ---- view state + helpers (week / month / year-in-pixels) ----
-// ---- عرض كل تقويم مستقلّ (أسبوع/شهر/سنة): لكل تقويم مفتاحه في S.settings.calView (طلب نوح: لا تتحرك كلها معاً) ----
+// ---- عرض كل تقويم مستقلّ (أسبوع/شهر/سنة): لكل تقويم مفتاحه في S.settings.calView (بطلب المستخدم: لا تتحرك كلها معاً) ----
 function calView(calId){ if(!S.settings)S.settings={}; if(!S.settings.calView)S.settings.calView={}; return S.settings.calView[calId]||'week'; }
 function setCalView(v,calId){
   if(!S.settings)S.settings={}; if(!S.settings.calView)S.settings.calView={};
@@ -66,7 +66,7 @@ function renderHabitViewToggle(){
 }
 function hKey(d){ return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
 function habitDoneOn(h,d){ return !!(h.log&&h.log[hKey(d)]); }
-// تعديل أي يوم سابق لعادة بنقرة على خليّته (طلب نوح — كان ناقصاً للعادات)
+// تعديل أي يوم سابق لعادة بنقرة على خليّته (بطلب المستخدم — كان ناقصاً للعادات)
 function toggleHabitDay(id,dk){
   var h=(S.habits||[]).find(function(x){return x.id===id;}); if(!h)return;
   if(!h.log)h.log={};

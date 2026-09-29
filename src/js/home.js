@@ -6,8 +6,8 @@ function showQuote(){var q=document.getElementById('quote-text');if(q)q.textCont
 // Home
 function renderHome(){
   var h=new Date().getHours();
-  var nm=(typeof userName==='function')?userName():'نوح';
-  document.getElementById('greeting').innerHTML='<i data-lucide="layout-dashboard"></i> '+(h<12?'صباح الخير يا ':(h<18?'مساء النور يا ':'مساء الخير يا '))+esc(nm);
+  var greet=(h<12?'صباح الخير':(h<18?'مساء النور':'مساء الخير'));
+  document.getElementById('greeting').innerHTML='<i data-lucide="layout-dashboard"></i> '+esc(withName(greet));
   var wd=new Date().toLocaleDateString('ar-EG',{weekday:'long'});
   var custom=formatIslamicDate(new Date());                         // [ن س] 2026 - [ر هـ ش] 06 - [م و ي] 03
   var hij='';try{hij=' — '+new Date().toLocaleDateString('ar-SA-u-ca-islamic',{day:'numeric',month:'long',year:'numeric'});}catch(e){}
@@ -107,7 +107,7 @@ function renderCommandCenter(){
               '<button class="btn cmd-btn-soft" onclick="navTo(\'tasks\')"><i data-lucide="plus"></i> أضف مهمة</button>';
     }else{
       var habitSug=suggestHabit();
-      eyebrow='<i data-lucide="party-popper"></i> أحسنت يا نوح';
+      eyebrow='<i data-lucide="party-popper"></i> '+esc(withName('أحسنت'));
       title='أنجزت '+todayMin+' دقيقة اليوم 🎉';
       sub=habitSug?('بقيت خطوة صغيرة: '+esc(habitSug)):'لا مهام معلّقة — أضف هدفاً جديداً أو خذ راحة تستحقها.';
       actions='<button class="btn pri cmd-btn-main" onclick="quickStartSession()"><i data-lucide="plus"></i> جلسة إضافية</button>'+
@@ -136,7 +136,7 @@ function renderCommandCenter(){
 var PERIOD_NAMES={fajr:'الفجر→الظهر',dhuhr:'الظهر→العصر',asr:'العصر→المغرب',maghrib:'المغرب→العشاء',isha:'العشاء→الفجر'};
 function refreshBestPeriod(){
   if(typeof dbGetAll!=='function'||typeof dbReady!=='function'||!dbReady())return;
-  var me=(typeof activeProfileId!=='undefined'?activeProfileId:'noah');
+  var me=curProfileId();
   dbGetAll('sessions').then(function(rows){
     var byP={},n=0;
     (rows||[]).forEach(function(s){ if(!s||s.profileId!==me||!s.period)return; byP[s.period]=(byP[s.period]||0)+(s.durationMin||0); n++; });

@@ -15,7 +15,7 @@ const XP_LEVELS=[
   {min:20000, max:32000, label:'عالِم',   lv:7},
   {min:32000, max:999999,label:'متفقّه', lv:8}
 ];
-// رحلة العلم — درجات موزّعة بعدلٍ عبر أبعاد حياة نوح (دراسة + عبادة + التزام)
+// رحلة العلم — درجات موزّعة بعدلٍ عبر أبعاد حياة المستخدم (دراسة + عبادة + التزام)
 // رحلة السعي — «الصلاة في القمة»: درجات مفصّلة بحسب حال الصلاة، ثم باقي أبعاد الحياة
 var PRAYER_XP={jama3a:15,solo:10,late:6,qada:4,missed:0};
 function getXP(){
@@ -86,7 +86,7 @@ function updateXP(){
   // احتفال ترقّي المستوى (مرّة واحدة)
   if(typeof S.lastXPLevel==='number'){
     if(lvl.lv>S.lastXPLevel){ S.lastXPLevel=lvl.lv; try{save();}catch(e){}
-      try{ showBadgePopup({emoji:'🎓',name:'ارتقيتَ في رحلة السعي!',desc:'أصبحتَ الآن: '+lvl.label+' — واصِل يا نوح'}); }catch(e){}
+      try{ showBadgePopup({emoji:'🎓',name:'ارتقيتَ في رحلة السعي!',desc:'أصبحتَ الآن: '+lvl.label+' — '+withName('واصِل')}); }catch(e){}
     } else if(lvl.lv<S.lastXPLevel){ S.lastXPLevel=lvl.lv; }
   } else { S.lastXPLevel=lvl.lv; }
 }
@@ -131,7 +131,7 @@ function openDayEditor(dk){
   var mins=(S.activityLog&&S.activityLog[dk])||0;
   var quran=(S.quran&&S.quran.log&&S.quran.log[dk])||0;
   var qy=(S.qiyam&&S.qiyam.log&&S.qiyam.log[dk]); var rak=qy?(qy.rakahs||0):0;
-  // الأذكار: تعديل كل ذِكر على حدة (طلب نوح) — وإلا الإجمالي إن لم توجد أذكار معرّفة
+  // الأذكار: تعديل كل ذِكر على حدة (بطلب المستخدم) — وإلا الإجمالي إن لم توجد أذكار معرّفة
   var adkList=(S.adhkar||[]), adkDay=(S.adhkarDayLog&&S.adhkarDayLog[dk])||{};
   var adkRows=adkList.length?adkList.map(function(a){
     return '<label class="de-field"><span style="border-inline-start:3px solid '+a.color+';padding-inline-start:6px">'+esc(a.name)+'</span><input type="number" min="0" id="de-adk-'+a.id+'" value="'+(adkDay[a.id]||0)+'"></label>';
@@ -211,7 +211,7 @@ function renderStudyReport(){
   var subjRows=_sk.map(function(k){var p=(typeof courseProg==='function')?courseProg(k):(S.subjects[k].prog||0);return '<tr><td>'+esc(subjLabel(k))+'</td><td>'+p+'%</td><td>'+((S.subjectLog&&S.subjectLog[k])||0)+' د</td></tr>';}).join('');
   var d=new Date();
   el.innerHTML=
-    '<div class="pr-head"><h1>تقرير «الاستدراك» — '+esc(typeof userName==='function'?userName():'نوح')+'</h1><div class="pr-date">'+formatIslamicDate(d)+'</div></div>'+
+    '<div class="pr-head"><h1>تقرير «'+APP_NAME+'»'+(userName()?' — '+esc(userName()):'')+'</h1><div class="pr-date">'+formatIslamicDate(d)+'</div></div>'+
     '<div class="pr-cards">'+
       '<div class="pr-card"><b>'+totalMin+'</b><span>إجمالي دقائق السعي</span></div>'+
       '<div class="pr-card"><b>'+sessions+'</b><span>جلسات السعي</span></div>'+
@@ -221,7 +221,7 @@ function renderStudyReport(){
       '<div class="pr-card"><b>'+prayerRate+'%</b><span>صلاة في وقتها</span></div>'+
     '</div>'+
     '<h2>تقدّم المواد</h2><table class="pr-table"><tr><th>المادة</th><th>الإنجاز</th><th>وقت الدراسة</th></tr>'+subjRows+'</table>'+
-    '<div class="pr-foot">تقرير مولّد محلياً من تطبيق «الاستدراك» · '+d.toLocaleString('ar-EG')+'</div>';
+    '<div class="pr-foot">تقرير مولّد محلياً من تطبيق «'+APP_NAME+'» · '+d.toLocaleString('ar-EG')+'</div>';
 }
 function exportReport(){ renderStudyReport(); document.body.classList.add('printing'); setTimeout(function(){ window.print(); setTimeout(function(){document.body.classList.remove('printing');},400); },120); }
 
@@ -338,7 +338,7 @@ function renderAnalytics(){
 function renderPeriodInsight(){
   var el=document.getElementById('period-insight'); if(!el)return;
   if(typeof dbGetAll!=='function'||typeof dbReady!=='function'||!dbReady()){ el.innerHTML=''; return; }
-  var me=(typeof activeProfileId!=='undefined'?activeProfileId:'noah');
+  var me=curProfileId();
   dbGetAll('sessions').then(function(rows){
     var byP={},tot=0;
     (rows||[]).forEach(function(s){ if(s.profileId!==me||!s.period)return; byP[s.period]=(byP[s.period]||0)+(s.durationMin||0); tot+=(s.durationMin||0); });
@@ -355,7 +355,7 @@ function renderPeriodInsight(){
     icons();
   }).catch(function(){});
 }
-// ===== أقسام الميزان: طيّ + إعادة ترتيب (طلب نوح) =====
+// ===== أقسام الميزان: طيّ + إعادة ترتيب (بطلب المستخدم) =====
 function statsSecCfg(){
   if(!S.settings)S.settings={};
   if(!S.settings.statsSec||typeof S.settings.statsSec!=='object')S.settings.statsSec={collapsed:{},order:[],inited:false};
@@ -380,7 +380,7 @@ function buildStatsSections(){
     page.appendChild(g.el);
     g.header.classList.add('stats-sec-head');
     g.header.setAttribute('onclick',"toggleStatsSec('"+jsStr(g.key)+"')");
-    // ضغطة مطوّلة ثم سحب لإعادة الترتيب (بدل سهمَي أعلى/أسفل — طلب نوح)
+    // ضغطة مطوّلة ثم سحب لإعادة الترتيب (بدل سهمَي أعلى/أسفل — بطلب المستخدم)
     g.header.setAttribute('onmousedown',"statsSecPress(event,'"+jsStr(g.key)+"')");
     g.header.setAttribute('onmouseup','statsSecRelease()');
     g.header.setAttribute('onmouseleave','statsSecRelease()');
@@ -392,7 +392,7 @@ function buildStatsSections(){
     g.header.insertAdjacentHTML('beforeend','<i data-lucide="chevron-down" class="ssec-caret"></i>');
   });
   page.setAttribute('data-secgrouped','1');
-  // أوّل مرّة: اطوِ كل الأقسام عدا «نظرة عامة» (طلب نوح: يظهر الرئيسي فقط)
+  // أوّل مرّة: اطوِ كل الأقسام عدا «نظرة عامة» (بطلب المستخدم: يظهر الرئيسي فقط)
   var cfg=statsSecCfg();
   if(!cfg.inited){ groups.forEach(function(g,i){ if(i>0)cfg.collapsed[g.key]=true; }); cfg.inited=true; try{save();}catch(e){} }
   applyStatsSections(); icons();
@@ -428,7 +428,7 @@ function statsSecDrop(e,key){
 }
 function statsSecDragEnd(e){ var g=e.currentTarget; if(g&&g.classList){ g.removeAttribute('draggable'); g.classList.remove('sec-armed','sec-dragging'); } _ssecDragKey=null; }
 
-// ===== تقويمات الميزان (أسبوع/شهر/سنة): الدراسة + العبادات الموحّدة + الرياضة (طلب نوح) =====
+// ===== تقويمات الميزان (أسبوع/شهر/سنة): الدراسة + العبادات الموحّدة + الرياضة (بطلب المستخدم) =====
 function renderStatsCalendars(){
   if(typeof worshipLogView!=='function')return;
   var sc=document.getElementById('study-cal');

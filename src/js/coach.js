@@ -54,7 +54,7 @@ function renderExamCountdown(){
   var totalDays=days+hours/24;
   var tone=totalDays<=7?'urgent':totalDays<=30?'soon':'ok';
   el.classList.add(tone);
-  // نقطة البداية = يوم تسجيل الموعد (تُلتقط مرّة) → الشريط يبدأ ممتلئاً «من النهارده» ويفرغ كلّما اقترب (طلب نوح)
+  // نقطة البداية = يوم تسجيل الموعد (تُلتقط مرّة) → الشريط يبدأ ممتلئاً «من النهارده» ويفرغ كلّما اقترب (بطلب المستخدم)
   var startD=dl.addedAt?parseDayKey(dl.addedAt):((S.settings&&S.settings.examStart)?parseDayKey(S.settings.examStart):null);
   if(!startD||startD>now){ startD=new Date(now.getFullYear(),now.getMonth(),now.getDate()); dl.addedAt=todayKey(); try{save();}catch(e){} }
   var spanMs=Math.max(86400000,target-startD);
@@ -214,15 +214,15 @@ function shareAchievementCard(){
     var pDone=0,pTotal=0; var pt=S.prayerTrack||{};
     Object.keys(pt).forEach(function(dk){PRAYER_KEYS.forEach(function(k){var v=pt[dk][k];if(v&&v.status&&v.status!=='none'){pTotal++;if(v.status==='jama3a'||v.status==='solo')pDone++;}});});
     var prayerPct=pTotal?Math.round(pDone/pTotal*100):0;
-    var nm=(typeof userName==='function')?userName():'نوح';
+    var nm=userName();
     var cv=document.createElement('canvas'); cv.width=1080; cv.height=1080; var c=cv.getContext('2d');
     var g=c.createLinearGradient(0,0,1080,1080); g.addColorStop(0,'#5750d8'); g.addColorStop(1,'#0d9488');
     c.fillStyle=g; c.fillRect(0,0,1080,1080);
     c.fillStyle='rgba(255,255,255,.10)'; c.fillRect(70,70,940,940);
     c.textAlign='center'; c.fillStyle='#fff';
-    c.font='800 64px Tajawal,sans-serif'; c.fillText('إنجاز '+nm+' الأسبوعي', 540, 230);
+    c.font='800 64px Tajawal,sans-serif'; c.fillText(nm?('إنجاز '+nm+' الأسبوعي'):'إنجازي الأسبوعي', 540, 230);
     c.font='500 34px Tajawal,sans-serif'; c.fillStyle='rgba(255,255,255,.85)';
-    c.fillText('مِنهاج اليوم — الاستدراك', 540, 295);
+    c.fillText('مِنهاج اليوم — '+APP_NAME, 540, 295);
     var stats=[[weekHours,'ساعة دراسة'],[prayerPct+'%','صلاة في وقتها'],[tasksDone,'واجب مُنجَز'],[(S.streak||0),'يوم متتالٍ']];
     var bx=[300,780,300,780], by=[520,520,820,820];
     stats.forEach(function(s,i){
@@ -234,7 +234,7 @@ function shareAchievementCard(){
     cv.toBlob(function(blob){
       if(!blob){ notify('تعذّر توليد البطاقة','x-circle'); return; }
       var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-      a.download='إنجاز-'+nm+'-'+new Date().toISOString().slice(0,10)+'.png';
+      a.download='إنجاز-'+(nm?nm+'-':'')+localDateKey(new Date())+'.png';
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(function(){ URL.revokeObjectURL(a.href); },4000);
       notify('تم حفظ بطاقة إنجازك ✓','image');

@@ -1,6 +1,45 @@
 // prayer.js — prayer schedule, online fetch, prayer tracker
 // module 8/10 of the former renderer.js — classic script (globals shared, no ES modules)
 
+// ---- طرق حساب المواقيت (معرّفات api.aladhan.com الرسمية) — مصدر واحد لقائمة الضبط والجولة التعريفية ----
+var PRAYER_METHODS=[
+  {id:5, ar:'الهيئة المصرية العامة للمساحة (مصر)'},
+  {id:4, ar:'أم القرى (مكة المكرمة)'},
+  {id:3, ar:'رابطة العالم الإسلامي'},
+  {id:8, ar:'منطقة الخليج'},
+  {id:16,ar:'دبي'},
+  {id:9, ar:'الكويت'},
+  {id:10,ar:'قطر'},
+  {id:23,ar:'الأردن (وزارة الأوقاف)'},
+  {id:18,ar:'تونس'},
+  {id:19,ar:'الجزائر'},
+  {id:21,ar:'المغرب'},
+  {id:13,ar:'تركيا (الشؤون الدينية)'},
+  {id:1, ar:'جامعة العلوم الإسلامية (كراتشي)'},
+  {id:2, ar:'أمريكا الشمالية (ISNA)'},
+  {id:12,ar:'فرنسا (UOIF)'},
+  {id:15,ar:'لجنة رؤية الهلال العالمية'},
+  {id:17,ar:'ماليزيا (JAKIM)'},
+  {id:20,ar:'إندونيسيا (KEMENAG)'},
+  {id:11,ar:'سنغافورة (MUIS)'},
+  {id:14,ar:'روسيا'}
+];
+var DEFAULT_PRAYER_METHOD=3;   // رابطة العالم الإسلامي — محايدة حين لا نعرف الدولة
+// اقتراح طريقة الحساب من اسم الدولة (عربي أو إنجليزي) — مجرد اقتراح يمكن تغييره في الضبط
+function methodForCountry(country){
+  var c=String(country||'').trim().toLowerCase();
+  var map=[[/egypt|مصر/,5],[/saudi|ksa|السعودية/,4],[/yemen|اليمن/,4],[/emirates|uae|الإمارات/,16],[/kuwait|الكويت/,9],[/qatar|قطر/,10],
+           [/bahrain|البحرين|oman|عمان|عُمان/,8],[/jordan|الأردن/,23],[/palestine|فلسطين|syria|سوريا|lebanon|لبنان|iraq|العراق/,3],
+           [/tunisia|تونس/,18],[/algeria|الجزائر/,19],[/morocco|المغرب/,21],[/libya|ليبيا|sudan|السودان/,5],[/turkey|türkiye|تركيا/,13],
+           [/pakistan|باكستان|india|الهند|bangladesh|بنغلاديش|afghanistan/,1],[/united states|usa|america|canada|أمريكا|كندا/,2],
+           [/france|فرنسا/,12],[/malaysia|ماليزيا/,17],[/indonesia|إندونيسيا/,20],[/singapore|سنغافورة/,11],[/russia|روسيا/,14]];
+  for(var i=0;i<map.length;i++){ if(map[i][0].test(c))return map[i][1]; }
+  return DEFAULT_PRAYER_METHOD;
+}
+function prayerMethodOptions(selected){
+  return PRAYER_METHODS.map(function(m){ return '<option value="'+m.id+'"'+(m.id===selected?' selected':'')+'>'+m.ar+'</option>'; }).join('');
+}
+
 
 // Prayer (manual weekly)
 function renderPrayerTable(){
@@ -137,15 +176,18 @@ function renderPrayerStats(){
       '<div class="pt-sum pt-missed"><b>'+c.missed+'</b>فاتت</div>'+
     '</div>';
 }
+// force=true: طلب صريح من المستخدم (يُظهر الإشعارات). force=false: جلب خلفي أسبوعي صامت.
 function fetchPrayerTimes(force){
   if(!S.settings)S.settings={};
   var city=S.settings.city,country=S.settings.country;
-  if(!city||!country){notify('أدخل المدينة والدولة في الإعدادات أولاً','alert-circle');return;}
-  // check if fetch needed (weekly)
-  if(!force){var lf=S.settings.lastFetch;if(lf){var diff=(new Date()-new Date(lf))/86400000;if(diff<7)return;}}
+  if(!city||!country){ if(force)notify('أدخل المدينة والدولة في الإعدادات أولاً','alert-circle'); return; }
+  // جلب أسبوعي: الطابع الزمني الرقمي lastFetchAt (كان lastFetch نصاً بأرقام عربية لا يُقرأ كتاريخ → يُعاد الجلب في كل تشغيل)
+  if(!force){var at=S.settings.lastFetchAt; if(typeof at==='number'&&(Date.now()-at)<7*86400000)return;}
+  if(_prayerFetching)return; _prayerFetching=true;
   var badge=document.getElementById('fetch-status-badge');
   if(badge){badge.className='fetch-status fetch-idle';badge.textContent='جارٍ الجلب...';}
-  notify('جارٍ جلب المواقيت...','download-cloud');
+  if(force)notify('جارٍ جلب المواقيت...','download-cloud');
+  _prayerFetchLoud=!!force;
   // fetch 7 days
   var fetched=0,failed=false;
   var d=new Date();
@@ -154,7 +196,7 @@ function fetchPrayerTimes(force){
       var dd=new Date(d);dd.setDate(d.getDate()+day);
       var dateStr=(dd.getDate())+'-'+(dd.getMonth()+1)+'-'+dd.getFullYear();
       var dayKey=DAYS[dd.getDay()];
-      var url='https://api.aladhan.com/v1/timingsByCity/'+dateStr+'?city='+encodeURIComponent(city)+'&country='+encodeURIComponent(country)+'&method='+(S.settings.method||4);
+      var url='https://api.aladhan.com/v1/timingsByCity/'+dateStr+'?city='+encodeURIComponent(city)+'&country='+encodeURIComponent(country)+'&method='+(S.settings.method||DEFAULT_PRAYER_METHOD);
       fetch(url).then(function(r){return r.json();}).then(function(data){
         if(data.code===200&&data.data&&data.data.timings){
           var t=data.data.timings;
@@ -168,15 +210,18 @@ function fetchPrayerTimes(force){
     })(i);
   }
 }
+var _prayerFetching=false, _prayerFetchLoud=false;
 function finishFetch(failed){
+  _prayerFetching=false;
   if(!failed){
-    S.settings.lastFetch=new Date().toLocaleDateString('ar-EG');
+    S.settings.lastFetchAt=Date.now();
+    S.settings.lastFetch=new Date().toLocaleDateString('ar-EG');   // للعرض فقط
     save();renderPrayerTable();renderTodayPrayers();renderHome();renderSettingsPage();
-    notify('تم جلب المواقيت بنجاح ✓','check-circle');
+    if(_prayerFetchLoud)notify('تم جلب المواقيت بنجاح ✓','check-circle');
     var badge=document.getElementById('fetch-status-badge');
     if(badge){badge.className='fetch-status fetch-ok';badge.textContent='تم الجلب ✓';}
   }else{
-    notify('فشل الجلب — تحقق من الاتصال','x-circle');
+    if(_prayerFetchLoud)notify('فشل الجلب — تحقق من الاتصال','x-circle');   // الجلب الخلفي بلا إنترنت لا يزعج المستخدم
     var badge=document.getElementById('fetch-status-badge');
     if(badge){badge.className='fetch-status fetch-err';badge.textContent='فشل الجلب';}
   }

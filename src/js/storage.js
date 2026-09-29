@@ -7,11 +7,11 @@ function save(){
     const json=JSON.stringify(S);
     // Primary backend (v2): IndexedDB profileState — write-through, async, never blocks the UI.
     if(typeof dbReady==='function'&&dbReady()){
-      try{ dbPut('profileState',{profileId:(typeof activeProfileId!=='undefined'?activeProfileId:'noah'),state:S}).catch(function(){}); }catch(_){}
+      try{ dbPut('profileState',{profileId:curProfileId(),state:S}).catch(function(){}); }catch(_){}
     }
     // Resilient fallback/mirror (sync) — keeps data safe if IndexedDB is blocked/unavailable.
-    localStorage.setItem('noah_v4',json);
-    localStorage.setItem('noah_v4_mirror',json);
+    localStorage.setItem(LS_STATE_KEY,json);
+    localStorage.setItem(LS_MIRROR_KEY,json);
     maybeBackup(json);                            // daily file backup (Electron)
   }catch(e){
     // storage full / blocked
@@ -34,12 +34,12 @@ function parseState(raw){var o=JSON.parse(raw);if(!o||typeof o!=='object'||Array
 function loadFromLocal(){
   let loaded=null,recovered=false;
   try{
-    const raw=localStorage.getItem('noah_v4')||localStorage.getItem('noah_v3');
+    const raw=localStorage.getItem(LS_STATE_KEY)||localStorage.getItem(LS_LEGACY_V3_KEY);
     if(raw)loaded=parseState(raw);
   }catch(e){console.warn('[الاستدراك] primary store corrupt:',e.message);}
   if(!loaded){
     try{
-      const m=localStorage.getItem('noah_v4_mirror');
+      const m=localStorage.getItem(LS_MIRROR_KEY);
       if(m){loaded=parseState(m);recovered=true;}
     }catch(e){console.warn('[الاستدراك] mirror also corrupt:',e.message);}
   }
@@ -71,12 +71,16 @@ function applyState(loaded,recovered){
   setTimeout(function(){
     if(typeof maybeAutoSnapshot==='function'){try{maybeAutoSnapshot();}catch(e){}}   // one auto restore-point per day
     if(typeof checkPrayerReminders==='function'){try{checkPrayerReminders();}catch(e){}}   // fire any due prayer reminder right after load
-    if(!S.onboarded&&typeof startOnboarding==='function'){try{startOnboarding();}catch(e){}}   // first-run / new profile wizard
+    var firstRun=!S.onboarded;
+    if(firstRun&&typeof startOnboarding==='function'){try{startOnboarding();}catch(e){}}   // first-run / new profile wizard
     if(recovered)notify('تم استرجاع بياناتك من النسخة الاحتياطية ✓','shield-check');
-    if(typeof maybeShowNiyyah==='function'){try{maybeShowNiyyah();}catch(e){}}
-    if(typeof maybeShowMuhasaba==='function'){try{maybeShowMuhasaba();}catch(e){}}
-    if(typeof maybeShowWeeklyReport==='function'){try{maybeShowWeeklyReport();}catch(e){}}
-    if(typeof recoveryNightCheck==='function'){try{recoveryNightCheck();}catch(e){}}   // تنبيه ليلي لطيف (إن فُعّل رفيق الطُّهر)
+    // طقوس اليوم والتقارير لا تُعرض فوق الجولة التعريفية (مستخدم جديد بلا «أمس» ولا أسبوع سابق)
+    if(!firstRun){
+      if(typeof maybeShowNiyyah==='function'){try{maybeShowNiyyah();}catch(e){}}
+      if(typeof maybeShowMuhasaba==='function'){try{maybeShowMuhasaba();}catch(e){}}
+      if(typeof maybeShowWeeklyReport==='function'){try{maybeShowWeeklyReport();}catch(e){}}
+      if(typeof recoveryNightCheck==='function'){try{recoveryNightCheck();}catch(e){}}   // تنبيه ليلي لطيف (إن فُعّل رفيق الطُّهر)
+    }
     requestNotifyPermission();
     checkExportReminder();
     maybeOfferDiskRestore(!loaded);
@@ -88,7 +92,7 @@ function applyState(loaded,recovered){
 function load(){ var r=loadFromLocal(); applyState(r.loaded,r.recovered); }
 // async primary path (v2): hydrate from IndexedDB profileState, else fall back to localStorage
 function loadAsync(){
-  return dbGet('profileState',(typeof activeProfileId!=='undefined'?activeProfileId:'noah')).then(function(rec){
+  return dbGet('profileState',curProfileId()).then(function(rec){
     if(rec&&rec.state){ applyState(rec.state,false); return; }
     // no IDB record yet → use localStorage, then seed IDB so it becomes the source of truth
     var r=loadFromLocal(); applyState(r.loaded,r.recovered);

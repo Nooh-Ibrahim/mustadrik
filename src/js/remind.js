@@ -110,7 +110,7 @@ function checkTaskReminders(){
 function quickCaptureAdd(text){
   text=(text||'').trim(); if(!text)return;
   var rec={ id:'bd_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
-            profileId:(typeof activeProfileId!=='undefined'?activeProfileId:'noah'),
+            profileId:curProfileId(),
             text:text, createdAt:Date.now(), processed:false };
   if(typeof dbPut==='function'&&typeof dbReady==='function'&&dbReady()){
     try{ dbPut('brainDump',rec).then(function(){ if(typeof renderDumpInbox==='function')renderDumpInbox(); }); }catch(e){}

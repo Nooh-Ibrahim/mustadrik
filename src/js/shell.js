@@ -128,7 +128,7 @@ function renderSettingsPage(){
   var city=document.getElementById('sett-city');var country=document.getElementById('sett-country');var method=document.getElementById('sett-method');
   if(city)city.value=(S.settings&&S.settings.city)||'';
   if(country)country.value=(S.settings&&S.settings.country)||'';
-  if(method)method.value=(S.settings&&S.settings.method)||4;
+  if(method){ var mv=(S.settings&&S.settings.method)||DEFAULT_PRAYER_METHOD; if(!method.options.length||method.dataset.filled!=='1'){ method.innerHTML=prayerMethodOptions(mv); method.dataset.filled='1'; } method.value=mv; }
   // last fetch label
   var lf=document.getElementById('sett-last-fetch');
   if(lf)lf.textContent=S.settings&&S.settings.lastFetch?'آخر جلب: '+S.settings.lastFetch:'لم يتم الجلب بعد';
@@ -213,7 +213,7 @@ function settChanged(){
   var city=document.getElementById('sett-city');var country=document.getElementById('sett-country');var method=document.getElementById('sett-method');
   if(city)S.settings.city=city.value.trim();
   if(country)S.settings.country=country.value.trim();
-  if(method)S.settings.method=parseInt(method.value)||4;
+  if(method){ var nm=parseInt(method.value,10); if(nm!==S.settings.method){ S.settings.method=nm||DEFAULT_PRAYER_METHOD; S.settings.lastFetchAt=0; } }   // تغيير الطريقة = المواقيت الحالية لم تعد صالحة
   save();
 }
 // (حُذفت settExamChanged — حقول امتحان الثانوية المفردة اتشالت في 10.8.0؛
@@ -285,7 +285,7 @@ function setGradient(field,val){ var g=gradientCfg(); g[field]=val; applyGradien
 function toggleGradient(){ var g=gradientCfg(); g.on=!g.on; applyGradient(); save(); renderSettingsPage(); }
 
 // ===== custom app logo (stored as a Blob in IndexedDB mediaBlobs) =====
-function logoId(){ return 'applogo-'+(typeof activeProfileId!=='undefined'?activeProfileId:'noah'); }
+function logoId(){ return 'applogo-'+curProfileId(); }
 // شعار «مُستدرِك» الافتراضي = حرف الميم (لفّة) — يُحقَن إن لم يوجد شعار مخصّص
 var BRAND_MEEM='<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 16a7 7 0 1 0-7 7"/><path d="M16 21a5 5 0 1 0-5-5"/><path d="M23 16v8"/></svg>';
 function applyLogo(){
@@ -308,7 +308,7 @@ function applyLogo(){
 function uploadLogo(e){
   var f=e.target&&e.target.files&&e.target.files[0]; if(!f)return;
   if(typeof mediaPut!=='function'){ notify('غير متاح هنا','x-circle'); return; }
-  mediaPut({id:logoId(),kind:'appLogo',profileId:(typeof activeProfileId!=='undefined'?activeProfileId:'noah')},f).then(function(){
+  mediaPut({id:logoId(),kind:'appLogo',profileId:curProfileId()},f).then(function(){
     if(!S.settings)S.settings={}; S.settings.logoSet=true; save(); applyLogo(); renderSettingsPage();
     notify('تم تعيين الشعار ✓','check-circle');
   }).catch(function(){ notify('تعذّر حفظ الشعار','x-circle'); });
@@ -350,7 +350,7 @@ function initTitlebar(){
 //  v10 ENHANCEMENTS  (notifications, data-safety, shortcuts,
 //  analytics, confirm-dialog, drag&drop, search)
 // ============================================================
-const BASE_TITLE='مُستدرِك';
+const BASE_TITLE=APP_NAME;
 let titleFlashInt=null, exportReminderShown=false, dragTaskId=null;
 
 // ---- helpers ----
