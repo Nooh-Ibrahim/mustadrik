@@ -58,7 +58,7 @@ test('termInfo: الأسبوع الحالي من الإجمالي + نسبة ا�
   const fixed = new RealDate('2026-10-24T12:00:00Z').getTime();
   C.Date = class extends RealDate { constructor(...a) { super(...(a.length ? a : [fixed])); } static now() { return fixed; } };
   const i = C.termInfo();
-  assert.equal(i.totalWeeks, 17);
+  assert.equal(i.totalWeeks, 16);        // ١٩ سبتمبر → ٨ يناير = ١١٢ يوماً = ١٦ أسبوعاً بالضبط (كان ١٧ بسبب ساعة التوقيت الصيفي)
   assert.equal(i.curWeek, 6);            // الأسبوع السادس (٥ أسابيع كاملة انقضت)
   assert.equal(i.started, true);
   assert.equal(i.ended, false);

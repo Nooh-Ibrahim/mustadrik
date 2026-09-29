@@ -23,3 +23,24 @@ jobs:
           ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
       - run: npm run lint
       - run: npm test
+
+  # Date logic must not depend on the machine's time zone or daylight-saving switches
+  # (a DST hour once turned a 16-week term into "17 weeks" for users in Egypt).
+  timezones:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tz: [Africa/Cairo, America/New_York, Asia/Tokyo]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - run: npm test
+        env:
+          TZ: ${{ matrix.tz }}

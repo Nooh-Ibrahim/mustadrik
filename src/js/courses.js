@@ -373,8 +373,12 @@ function termInfo(){
   var s=new Date(t.start+'T00:00:00'), e=new Date(t.end+'T23:59:59'), now=new Date();
   if(isNaN(s)||isNaN(e)||e<=s)return null;
   var span=e-s, gone=Math.max(0,Math.min(span,now-s));
-  var totalWeeks=Math.max(1,Math.ceil(span/604800000));
-  var curWeek=Math.max(1,Math.min(totalWeeks,Math.ceil((gone||1)/604800000)));
+  // الأسابيع بالأيام التقويمية لا بالملّي ثانية: التحوّل من التوقيت الصيفي يضيف ساعة للفرق،
+  // فكان ترمٌ من ١٦ أسبوعاً بالضبط يظهر «١٧ أسبوعاً» في مصر.
+  var dayNo=function(d){ return Math.round(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/86400000); };
+  var totalDays=dayNo(e)-dayNo(s)+1, daysGone=Math.max(0,Math.min(totalDays-1,dayNo(now)-dayNo(s)));
+  var totalWeeks=Math.max(1,Math.ceil(totalDays/7));
+  var curWeek=Math.max(1,Math.min(totalWeeks,Math.floor(daysGone/7)+1));
   return {
     name:t.name||'الترم الحالي', start:s, end:e,
     totalWeeks:totalWeeks, curWeek:curWeek,
