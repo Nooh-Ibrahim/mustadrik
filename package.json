@@ -1,22 +1,52 @@
 {
-  "name": "noah-dashboard",
-  "version": "10.9.1",
-  "description": "مُستدرِك — تطبيق سطح مكتب لإدارة الدراسة والعادات والصلوات",
-  "author": "Noah",
+  "name": "mustadrik",
+  "productName": "Mustadrik",
+  "version": "11.0.0",
+  "description": "مُستدرِك — رفيق هادئ للدراسة والعبادة والعادات: مؤقّت تركيز، مهام، صلوات، ومتابعة — يعمل دون إنترنت وبياناتك على جهازك فقط.",
+  "author": {
+    "name": "Nooh Ibrahim",
+    "url": "https://github.com/Nooh-Ibrahim"
+  },
   "license": "MIT",
+  "homepage": "https://github.com/Nooh-Ibrahim/mustadrik#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nooh-Ibrahim/mustadrik.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Nooh-Ibrahim/mustadrik/issues"
+  },
+  "keywords": [
+    "electron",
+    "pomodoro",
+    "study",
+    "productivity",
+    "adhd",
+    "prayer-times",
+    "arabic",
+    "rtl",
+    "offline",
+    "habits"
+  ],
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "test": "node --test \"tests/*.test.js\"",
+    "e2e:fresh": "node scripts/e2e.js fresh",
+    "e2e:upgrade": "node scripts/e2e.js upgrade",
+    "screenshots": "node scripts/e2e.js shots docs/screenshots",
+    "web": "node scripts/bundle-web.js",
     "assets": "node scripts/fetch-assets.js",
     "icon": "node scripts/make-icon.js",
     "prep": "node scripts/make-icon.js && node scripts/fetch-assets.js",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder --win"
+    "pack": "electron-builder --dir --publish never",
+    "dist": "electron-builder --win --publish never",
+    "release": "electron-builder --win --publish always"
   },
   "build": {
     "appId": "com.noah.studydashboard",
     "productName": "Mustadrik",
+    "copyright": "Copyright © 2026 Nooh Ibrahim",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -33,11 +63,25 @@
         "to": "icon.ico"
       }
     ],
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Nooh-Ibrahim",
+        "repo": "mustadrik",
+        "releaseType": "release"
+      }
+    ],
     "win": {
       "icon": "build/icon.ico",
       "target": [
         {
           "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
           "arch": [
             "x64"
           ]
@@ -51,12 +95,16 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "مُستدرِك",
-      "artifactName": "Mustadrik-Setup-${version}.${ext}"
+      "artifactName": "Mustadrik-Setup-${version}.${ext}",
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "Mustadrik-Portable-${version}.${ext}"
     }
   },
   "devDependencies": {
-    "electron": "33.2.1",
-    "electron-builder": "25.1.8"
+    "electron": "44.4.5",
+    "electron-builder": "26.15.3"
   },
   "dependencies": {
     "electron-updater": "^6.8.9"

@@ -53,8 +53,20 @@ function openSocket(url) {
   });
 }
 
+// main-process errors land in <userData>/logs/errors.log (main.js appendLog)
+function mainErrors(dataDir) {
+  try { return fs.readFileSync(path.join(dataDir, 'logs', 'errors.log'), 'utf8').split(/\r?\n/).filter(Boolean); } catch (_) { return []; }
+}
+// an old checkout runs on ITS OWN Electron when it has one (faithful: old Chromium writes the IndexedDB)
+// …or a packaged build folder (Mustadrik.exe + resources/app) — its bundled runtime is the old Electron
+function packagedExe(appDir) { const f = path.join(appDir, 'Mustadrik.exe'); return fs.existsSync(f) ? f : null; }
+function appRoot(appDir) { return packagedExe(appDir) ? path.join(appDir, 'resources', 'app') : appDir; }
+function electronFor(appDir) {
+  if (packagedExe(appDir)) return packagedExe(appDir);
+  try { return require(path.join(appDir, 'node_modules', 'electron')); } catch (_) { return ELECTRON; }
+}
 function launch(appDir, dataDir, port, extraEnv) {
-  const child = spawn(ELECTRON, [appDir, '--data-dir=' + dataDir, '--remote-debugging-port=' + port], {
+  const child = spawn(electronFor(appDir), [appDir, '--data-dir=' + dataDir, '--remote-debugging-port=' + port], {
     cwd: appDir, env: Object.assign({}, process.env, extraEnv || {}), stdio: 'ignore', windowsHide: false,
   });
   return child;
@@ -99,18 +111,19 @@ async function fresh() {
     c.close();
   } finally { await stop(app); }
   out.dataDirHasIndexedDB = fs.existsSync(path.join(dataDir, 'IndexedDB'));
+  out.mainErrors = mainErrors(dataDir);
   out.pass = !!(out.booted && out.wizardShown && out.nameBefore === '' && !out.ritualOnTop && out.onboarded && out.method === 5 &&
     out.profileName === 'مستخدم تجريبي' && out.backupOk && /^mustadrik-backup-/.test(out.backupName || '') && out.traversalBlocked &&
-    out.readBackOk && out.junkRejected && out.dataDirHasIndexedDB && out.consoleErrors.length === 0);
+    out.readBackOk && out.junkRejected && out.dataDirHasIndexedDB && out.consoleErrors.length === 0 && out.mainErrors.length === 0);
   return out;
 }
 
 async function upgrade(oldAppDir) {
-  if (!oldAppDir || !fs.existsSync(path.join(oldAppDir, 'main.js'))) throw new Error('usage: e2e.js upgrade <dir of an older checkout with node_modules>');
+  if (!oldAppDir || !fs.existsSync(path.join(appRoot(oldAppDir), 'main.js'))) throw new Error('usage: e2e.js upgrade <dir of an older checkout with node_modules>');
   if (path.resolve(oldAppDir) === path.resolve(ROOT)) throw new Error('oldAppDir must be a separate (throwaway) checkout');
   // Versions before 11 hard-code the real %APPDATA%/noah-dashboard folder. Redirect that throwaway copy to the
   // scratch folder — and REFUSE to run if the redirect is not in place, so a test can never open real data.
-  const oldMain = path.join(oldAppDir, 'main.js');
+  const oldMain = path.join(appRoot(oldAppDir), 'main.js');
   let src = fs.readFileSync(oldMain, 'utf8');
   const PIN = "app.setPath('userData', path.join(app.getPath('appData'), 'noah-dashboard'));";
   if (src.includes(PIN)) {
@@ -120,7 +133,7 @@ async function upgrade(oldAppDir) {
   if (!/MUSTADRIK_E2E_OLD_USERDATA|resolveUserDataDir/.test(fs.readFileSync(oldMain, 'utf8'))) throw new Error('refusing: the old checkout would open the real user-data folder');
   const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mustadrik-e2e-upgrade-'));
   const fixture = fs.readFileSync(path.join(ROOT, 'tests', 'fixtures', 'legacy-state.json'), 'utf8');
-  const out = { scenario: 'upgrade', dataDir, oldAppDir };
+  const out = { scenario: 'upgrade', dataDir, oldAppDir, oldRuntime: electronFor(oldAppDir) };
   // 1) the OLD app writes the (synthetic) legacy state into its own IndexedDB + a legacy disk backup
   let app = launch(oldAppDir, dataDir, 9342, { MUSTADRIK_E2E_OLD_USERDATA: dataDir });
   try {
@@ -166,7 +179,8 @@ async function upgrade(oldAppDir) {
     out.consoleErrors = c.logs;
     c.close();
   } finally { await stop(app); }
-  out.pass = !!(out.booted && !out.after.wizardShown && out.after.profileId === out.old.profileId && out.after.name === 'مستخدم تجريبي' &&
+  out.mainErrors = mainErrors(dataDir);
+  out.pass = !!(out.mainErrors.length === 0 && out.booted && !out.after.wizardShown && out.after.profileId === out.old.profileId && out.after.name === 'مستخدم تجريبي' &&
     out.lostOrChanged.length === 0 && out.tasksKept.length === 2 && out.after.backups.some((n) => /^noah-backup-/.test(n)) && out.consoleErrors.length === 0);
   return out;
 }

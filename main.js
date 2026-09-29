@@ -485,6 +485,7 @@ let autoUpdater = null;
 try { autoUpdater = require('electron-updater').autoUpdater; } catch (_) {}
 function initUpdates() {
   if (!autoUpdater || !app.isPackaged) return;
+  if (process.env.PORTABLE_EXECUTABLE_DIR) return;   // النسخة المحمولة لا تُحدَّث ذاتياً — تُستبدل يدوياً
   try {
     if (!fs.existsSync(path.join(process.resourcesPath, 'app-update.yml'))) return;  // لم يُفعَّل النشر بعد
     autoUpdater.autoDownload = true;
