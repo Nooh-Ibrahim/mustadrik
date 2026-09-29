@@ -1,0 +1,35 @@
+# ---- dependencies & build output ----
+node_modules/
+dist/
+out/
+web/
+*.tsbuildinfo
+
+# ---- generated single-file web build (npm run web) ----
+noah_dashboard_v10.html
+mustadrik-web.html
+
+# ---- local user data, backups, logs (never publish) ----
+*-backup-*.json
+*-live.json
+userdata*/
+_userdata*/
+logs/
+*.log
+
+# ---- private development notes (kept locally, not part of the public repo) ----
+HANDOFF.md
+noah-changelog.txt
+_vp.txt
+_out*.txt
+.private/
+
+# ---- editor / OS / tooling ----
+.claude/
+.vscode/
+.idea/
+.env
+.env.*
+.DS_Store
+Thumbs.db
+desktop.ini

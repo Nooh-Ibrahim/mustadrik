@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.aladhan.com">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>مُستدرِك</title>
+<script defer src="assets/lucide.min.js"></script>
+<link rel="stylesheet" href="assets/fonts.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="t-indigo">
+<div id="app-gradient" aria-hidden="true"></div>
+
+<!-- شريط العنوان المخصص (نافذة Frameless) -->
+<div id="titlebar" class="titlebar">
+  <!-- أزرار النافذة أقصى اليسار: إغلاق ← تكبير/استعادة ← تصغير (طلب نوح) -->
+  <div class="tb-controls" id="tb-controls">
+    <button class="tb-win-btn tb-close" onclick="winAction('close')" title="إغلاق"><i data-lucide="x"></i></button>
+    <button class="tb-win-btn" id="tb-max-btn" onclick="winAction('maximize')" title="تكبير"><i data-lucide="square"></i></button>
+    <button class="tb-win-btn" onclick="winAction('minimize')" title="تصغير"><i data-lucide="minus"></i></button>
+  </div>
+  <!-- يسار: القائمة ← شعار التطبيق (ميم) ← جرس الصلوات الفائتة ← تنظيم الصفحة -->
+  <div class="tb-left">
+    <button class="tb-menu-btn" onclick="toggleAppMenu(event)" title="القائمة"><i data-lucide="menu"></i></button>
+    <div class="tb-brand"><span id="tb-logo" class="tb-logo" title="مُستدرِك"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 16a7 7 0 1 0-7 7"/><path d="M16 21a5 5 0 1 0-5-5"/><path d="M23 16v8"/></svg></span></div>
+    <button class="tb-bell" id="tb-bell" onclick="toggleBellPanel(event)" title="الصلوات الفائتة"><i data-lucide="bell"></i><span class="tb-bell-dot" id="tb-bell-dot" style="display:none">0</span></button>
+    <button class="tb-menu-btn" id="tb-organize" onclick="toggleOrganizePanel(event)" title="تنظيم هذه الصفحة"><i data-lucide="layout-panel-top"></i></button>
+  </div>
+  <div class="tb-drag"></div>
+  <!-- التبويبات الرئيسية يميناً (RTL): الرئيسية ← الغاية ← الثغر ← المرآة ← الضبط -->
+  <div id="tb-sections" class="tb-sections"></div>
+  <!-- قائمة الهمبرغر (مخفية حتى الطلب) -->
+  <div id="app-menu" class="app-menu">
+    <button class="am-item" onclick="navTo('settings');closeAppMenu()"><i data-lucide="settings-2"></i> الضبط</button>
+    <button class="am-item" onclick="navTo('home');closeAppMenu()"><i data-lucide="home"></i> الرئيسية</button>
+    <div class="am-sep"></div>
+    <button class="am-item" onclick="winAction('reload');closeAppMenu()"><i data-lucide="rotate-cw"></i> إعادة تحميل</button>
+    <button class="am-item" onclick="winAction('fullscreen');closeAppMenu()"><i data-lucide="maximize"></i> ملء الشاشة</button>
+    <div class="am-sep"></div>
+    <button class="am-item" onclick="winAction('zoom-in')"><i data-lucide="zoom-in"></i> تكبير العرض</button>
+    <button class="am-item" onclick="winAction('zoom-out')"><i data-lucide="zoom-out"></i> تصغير العرض</button>
+    <button class="am-item" onclick="winAction('zoom-reset')"><i data-lucide="rotate-ccw"></i> الحجم الأصلي</button>
+    <div class="am-sep"></div>
+    <button class="am-item" onclick="winAction('devtools')"><i data-lucide="code-2"></i> أدوات المطور</button>
+    <button class="am-item am-danger" onclick="winAction('close')"><i data-lucide="log-out"></i> خروج</button>
+  </div>
+  <!-- لوحة «تنظيم الصفحة» — تخص الصفحة الحالية فقط (أعمدة + إرجاع المخفي) -->
+  <div id="organize-panel" class="organize-panel"></div>
+</div>
+
+<!-- شريط التنقّل العلوي (يظهر داخل كل قسم) -->
+<div id="topnav" class="topnav"></div>
+
+<!-- لوحة جرس الإشعارات (الصلوات الفائتة/غير المسجّلة) — تُملأ من renderBellPanel() -->
+<div id="bell-panel" class="bell-panel"></div>
+
+<div class="app">
+
+<!-- (أُزيل الشريط الجانبي القديم نهائياً — التنقّل صار عبر «المِنصّة» + الشريط العلوي) -->
+
+<main class="main">
+<div class="main-inner">
+
+<!-- (حُذفت صفحة المِنصّة القديمة نهائياً — الرئيسية هي اللوحة الموحّدة) -->
+
+<!-- الرئيسية — اللوحة الغنية الموحّدة (المِنصّة + اليوم بالتفصيل معاً) -->
+<div class="page active masonry" id="page-home">
+  <!-- (حُذفت بطاقة «كلمة اليوم» نهائياً — طلب المالك ٢٥ يونيو ٢٠٢٦) -->
+
+  <!-- (حُذفت بطاقة «تنبيهات الصلاة» نهائياً — طلب المالك ٢٥ يونيو ٢٠٢٦) -->
+
+  <!-- شريط التحوّل لمرحلة جديدة — يظهر فقط عند الحاجة (مساقات المرحلة السابقة، أو لا مساقات) -->
+  <div id="phase-banner" class="phase-banner dash-tile" data-cid="phase-banner" data-default-span="full" data-tile-label="بداية مرحلة" style="display:none"></div>
+
+  <!-- عدّاد الامتحان — بلاطة موحّدة (ست نقط/طيّ/سبان/X) -->
+  <div id="exam-countdown" class="exam-countdown dash-tile" data-cid="exam-countdown" data-default-span="full" data-tile-label="عدّاد الامتحان"></div>
+
+  <!-- (أُذيب home-top-grid — المراجعة والطاقة/النية بلاطتان حرّتان جنب بعض) -->
+  <!-- (حُذفت بطاقة «المراجعة» نهائياً — طلب المالك ٢٥ يونيو ٢٠٢٦) -->
+  <div class="home-rituals-bar dash-tile" data-cid="rituals-bar" data-default-span="half" data-tile-label="الطاقة والنية">
+    <div class="energy-meter">
+      <span class="energy-label"><i data-lucide="zap" style="width:14px;height:14px"></i> طاقتك الآن:</span>
+      <button class="energy-btn" id="energy-نشيط" onclick="setEnergy('نشيط')" title="نشيط"><span>🟢</span> نشيط</button>
+      <button class="energy-btn" id="energy-متعب" onclick="setEnergy('متعب')" title="متعب"><span>🟡</span> متعب</button>
+      <button class="energy-btn" id="energy-مرهق" onclick="setEnergy('مرهق')" title="مرهق"><span>🔴</span> مرهق</button>
+    </div>
+    <div id="niyyah-display" class="niyyah-display" onclick="openMorningFlow()"></div>
+  </div>
+
+  <div class="page-head">
+    <div class="page-title" id="greeting"><i data-lucide="layout-dashboard"></i> أهلاً نوح</div>
+    <div class="page-desc" id="home-date"></div>
+  </div>
+  <!-- مركز القيادة: ماذا الآن؟ -->
+  <div class="cmd-center dash-tile" id="cmd-center" data-cid="cmd-center" data-default-span="full"></div>
+
+  <!-- بطاقة إنجاز اليوم (محاسبة لحظية) -->
+  <div class="daily-recap dash-tile" id="daily-recap" data-cid="daily-recap" data-tile-label="إنجاز اليوم"></div>
+
+  <!-- محاضرات النهارده — تظهر فقط لو الجدول فيه محاضرات اليوم -->
+  <div class="card today-classes" id="today-classes" data-cid="today-classes" data-default-span="half" data-tile-label="محاضرات اليوم" style="display:none"></div>
+
+  <!-- مؤشّر المقاصد البصري (هدف الدقائق: اليوم/الأسبوع) — حلّ محلّ صفحة المقاصد -->
+  <div class="card maqasid-card" id="maqasid-card" data-cid="maqasid"></div>
+
+  <!-- النهوض + استعراض الإنجازات (اندمج من صفحة «النهوض») -->
+  <div class="card rise-home-card" id="rise-home-card" data-cid="rise"></div>
+
+  <!-- (أُزيل المخطط البصري لليوم نهائياً — مخطط الصلاة يبقى في صفحة «الصلاة» فقط) -->
+
+  <!-- (حُذفت بطاقات «نظرة سريعة» و«الصلاة القادمة» و«التقويم والقبلة» نهائياً — طلب المالك ٢٥ يونيو ٢٠٢٦) -->
+  <div class="card" id="med-card" data-cid="med" data-default-span="half" data-tile-label="الدواء" style="display:none">
+    <div class="card-title"><i data-lucide="pill"></i> <span id="med-title">الدواء</span></div>
+    <div id="med-body"></div>
+  </div>
+  <!-- (حُذفت بطاقة «نور اليوم» نهائياً — طلب المالك ٢٥ يونيو ٢٠٢٦) -->
+</div>
+
+<!-- السعي -->
+<div class="page masonry" id="page-pomodoro">
+  <div class="page-head"><div class="page-title"><i data-lucide="timer"></i> السعي</div><div class="page-desc">ركّز في جلسات سعي قصيرة مع راحات منتظمة — تحكّم مطلق في المدد</div></div>
+  <!-- (أُذيب grid2 — كل بطاقات الجِدّ بلاطات حرّة موحّدة: تتحرّك وتُطوى وتتجاور) -->
+  <div class="card focus-card" data-cid="timer" data-default-span="half" data-tile-label="المؤقّت">
+      <div class="focus-task-name" id="focus-task-display" style="display:none"></div>
+      <!-- منطقة إفلات المهمة داخل الجلسة -->
+      <div class="sa3i-drop" id="sa3i-drop" ondragover="sa3iDropOver(event)" ondragleave="sa3iDropLeave(event)" ondrop="sa3iDropTask(event)"><i data-lucide="target"></i> أفلت مهمة هنا لتبدأ جلسة سعي لها</div>
+      <div id="mindful-bubbles" class="mindful-bubbles"></div>
+      <!-- المؤقت الفيزيائي متعدد الأنواع (حلقة / قرص / ساعة رملية / عقارب) -->
+      <div class="timer-visual" id="timer-visual" data-style="ring">
+        <svg class="tv-ring" viewBox="0 0 120 120">
+          <circle class="ring-bg" cx="60" cy="60" r="54"/>
+          <circle class="ring-fg" id="timer-ring-fg" cx="60" cy="60" r="54"/>
+        </svg>
+        <div class="tv-disc" id="timer-disc"></div>
+        <svg class="tv-hourglass" viewBox="0 0 100 140">
+          <defs>
+            <linearGradient id="hgGlass" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="rgba(255,255,255,.20)"/>
+              <stop offset=".5" stop-color="rgba(255,255,255,.05)"/>
+              <stop offset="1" stop-color="rgba(255,255,255,.12)"/>
+            </linearGradient>
+          </defs>
+          <!-- زجاج الساعة (تعبئة شفّافة بتدرّج لإيهام اللمعان) -->
+          <path class="hg-glass" d="M26 12 C26 48 50 60 50 70 C50 80 26 92 26 128 L74 128 C74 92 50 80 50 70 C50 60 74 48 74 12 Z"/>
+          <path class="hg-frame" d="M22 12 H78 M22 128 H78 M26 12 C26 48 50 60 50 70 C50 80 26 92 26 128 M74 12 C74 48 50 60 50 70 C50 80 74 92 74 128"/>
+          <polygon class="hg-sand" id="hg-top" points="50,70 50,70 50,70"/>
+          <polygon class="hg-sand" id="hg-bot" points="50,128 50,128 50,128"/>
+          <!-- خيط الرمل المتساقط (يظهر متحرّكاً أثناء الجلسة فقط) -->
+          <line class="hg-stream" x1="50" y1="71" x2="50" y2="120"/>
+        </svg>
+        <svg class="tv-clock" viewBox="0 0 120 120">
+          <circle class="clk-face" cx="60" cy="60" r="54"/>
+          <g class="clk-ticks" id="clk-ticks"></g>
+          <line class="clk-hand" id="clk-hand" x1="60" y1="60" x2="60" y2="14"/>
+          <circle class="clk-pin" cx="60" cy="60" r="4"/>
+        </svg>
+        <div class="timer-ring-center">
+          <div id="timer-display" class="timer-num">20:00</div>
+          <div id="timer-endsat" class="timer-endsat"></div>
+        </div>
+      </div>
+      <div id="companion" class="companion-strip" style="display:none"></div>
+      <div id="timer-label" class="timer-lbl"><i data-lucide="book-open"></i> جلسة سعي</div>
+      <div class="row" style="justify-content:center;margin-bottom:.6rem">
+        <button class="btn pri tbtn" id="btn-start" onclick="startTimer()" title="تشغيل"><i data-lucide="play"></i></button>
+        <button class="btn tbtn" id="btn-pause" onclick="pauseTimer()" style="display:none" title="إيقاف مؤقّت"><i data-lucide="pause"></i></button>
+        <button class="btn tbtn" onclick="resetTimer()" title="إعادة"><i data-lucide="rotate-ccw"></i></button>
+        <button class="btn tbtn" id="btn-focus" onclick="toggleFocus()" title="تركيز"><i data-lucide="eye"></i></button>
+        <button class="btn ghost tbtn" onclick="stuckHelp()" title="عالق / ثقيلة؟"><i data-lucide="life-buoy"></i></button>
+      </div>
+      <!-- أزرار الراحة (تظهر وقت الراحة فقط) -->
+      <div class="row break-controls" id="break-controls" style="justify-content:center;margin-bottom:1rem;display:none">
+        <button class="btn sm" onclick="skipBreak()"><i data-lucide="skip-forward"></i> تخطّي الراحة</button>
+        <button class="btn sm" onclick="extendBreak()"><i data-lucide="plus"></i> +٥ دقائق</button>
+      </div>
+      <!-- إعدادات مدمجة -->
+      <button class="pomo-settings-toggle" onclick="togglePomoSettings()"><i data-lucide="sliders-horizontal"></i> إعدادات السعي <i data-lucide="chevron-down" id="pomo-caret"></i></button>
+      <div class="pomo-settings-panel" id="pomo-settings-panel">
+        <div style="padding:.85rem .25rem .25rem;display:flex;flex-direction:column;gap:.85rem">
+          <div class="sa3i-set-row">
+            <label>شكل المؤقّت</label>
+            <div class="seg-ctrl" id="timer-style-ctrl"></div>
+          </div>
+          <label class="field-check"><input type="checkbox" id="timer-shownum-chk" onchange="toggleTimerNum()"> إظهار الأرقام بجانب الشكل</label>
+          <div class="sa3i-set-row">
+            <label>نوع التركيز (زر «تركيز»)</label>
+            <div class="seg-ctrl" id="focus-mode-ctrl"></div>
+          </div>
+          <!-- كتلة السعي: مدة كلية → عدد الجلسات يُحسب تلقائياً مع احتساب الراحات (طلب نوح) -->
+          <div class="sa3i-set-row">
+            <label>مدة الجلسة الكلية (الكتلة): <b id="block-dur-lbl">100</b> دقيقة</label>
+            <div class="sa3i-set-ctrl">
+              <input type="range" min="20" max="300" step="5" value="100" id="block-range" oninput="syncBlock('range')">
+              <input type="number" min="20" max="600" value="100" id="block-dur" oninput="syncBlock('num')">
+            </div>
+          </div>
+          <div class="sa3i-block-plan" id="sa3i-block-plan"></div>
+          <div class="sa3i-set-row">
+            <label>مدة كل جلسة: <b id="work-dur-lbl">20</b> دقيقة</label>
+            <div class="sa3i-set-ctrl">
+              <input type="range" min="1" max="120" step="1" value="20" id="work-range" oninput="syncDur('work','range')">
+              <input type="number" min="1" max="600" value="20" id="work-dur" oninput="syncDur('work','num')">
+            </div>
+          </div>
+          <div class="sa3i-set-row">
+            <label>مدة الراحة القصيرة: <b id="break-dur-lbl">5</b> دقيقة</label>
+            <div class="sa3i-set-ctrl">
+              <input type="range" min="1" max="60" step="1" value="5" id="break-range" oninput="syncDur('break','range')">
+              <input type="number" min="1" max="120" value="5" id="break-dur" oninput="syncDur('break','num')">
+            </div>
+          </div>
+          <div class="row" style="gap:.85rem">
+            <label class="field-check"><input type="checkbox" id="longbreak-enabled-chk" onchange="sa3iCfgChange()"> فعّل الراحة الطويلة (اختيارية)</label>
+            <span class="field"><label>الراحة الطويلة (دقيقة)</label><input type="number" min="1" max="120" value="15" id="longbreak-dur" style="width:70px" oninput="sa3iCfgChange()"></span>
+            <span class="field"><label>بعد كل (جلسات)</label><input type="number" min="1" max="12" value="4" id="rounds-input" style="width:70px" oninput="sa3iCfgChange()"></span>
+            <label class="field-check"><input type="checkbox" id="autostart-chk" checked onchange="sa3iCfgChange()"> بدء تلقائي للمرحلة التالية</label>
+            <label class="field-check"><input type="checkbox" id="companion-chk" onchange="toggleCompanion()"> 🤝 الرفيق الصامت (حضور + صوت محيط أثناء الجلسة)</label>
+          </div>
+          <div class="row">
+            <span class="field"><label>صوت محيطي</label><select id="ambient-sel" onchange="changeAmbient()"><option value="none">بدون صوت</option><option value="brown">ضوضاء بنّية (تركيز عميق)</option><option value="pink">ضوضاء وردية (ناعمة)</option><option value="white">ضوضاء بيضاء</option><option value="rain">مطر</option><option value="cafe">كافيه</option></select></span>
+            <input type="range" min="0" max="1" step="0.1" value="0.5" id="vol-slider" oninput="setVolume(this.value)" style="width:90px">
+            <span class="field"><label>المساق الحالي</label><select id="pomo-subject"><!-- يُبنى من الحالة: syncCourseSelects() --></select></span>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:1rem;font-size:14px;color:var(--text2);font-weight:600">جلسات اليوم: <span style="color:var(--accent-text);font-weight:800" id="sess-count">0</span> · هذه الدورة: <span style="color:var(--accent-text);font-weight:800" id="round-count">0</span></div>
+  </div>
+  <!-- مؤشّر المقاصد المصغّر داخل الجِدّ (هدف الدقائق: اليوم/الأسبوع) -->
+  <div class="card maqasid-mini-card" id="maqasid-mini" data-cid="maqasid-mini" data-default-span="half" data-tile-label="المقاصد"></div>
+  <div class="card" data-cid="day-plan" data-default-span="half">
+    <div class="card-title"><i data-lucide="layout-list"></i> تخطيط اليوم حسب الصلوات — اسحب مهامّك بين الفترات</div>
+    <div id="day-plan"></div>
+  </div>
+  <div class="card" data-cid="sa3i-tasks" data-default-span="half">
+    <div class="card-title"><i data-lucide="check-square"></i> اضغط مهمة لوضعها في المؤقّت (دون تشغيل) أو اسحبها</div>
+    <div id="sa3i-eta"></div>
+    <div id="sa3i-tasks" class="sa3i-tasks"></div>
+  </div>
+  <!-- (حُذفت بطاقة «سجل الجلسات» نهائياً — طلب المالك ٢٥ يونيو ٢٠٢٦) -->
+</div>
+
+<!-- ديوان الواجبات -->
+<div class="page" id="page-tasks">
+  <div class="page-head"><div class="page-title"><i data-lucide="check-square"></i> ديوان الواجبات</div><div class="page-desc">قسّم كل واجب لخطوات صغيرة — واضغط على النص لتعديله</div></div>
+  <div class="card" data-cid="tasks-main">
+    <div class="add-bar">
+      <input id="task-input" class="add-bar-input" placeholder="اكتب مهمة جديدة ثم اضغط Enter..." onkeydown="if(event.key==='Enter')addTask()">
+      <button class="btn add-opt-toggle" id="task-opt-toggle" onclick="toggleTaskOptions()" title="مادة وأولوية وموعد"><i data-lucide="sliders-horizontal"></i> خيارات</button>
+      <button class="btn pri" onclick="addTask()"><i data-lucide="plus"></i> إضافة</button>
+    </div>
+    <div class="add-options" id="task-options">
+      <span class="field"><label>المساق</label><select id="task-subject"><!-- يُبنى من الحالة: syncCourseSelects() --></select></span>
+      <span class="field"><label>تصنيف حر (اختياري)</label><input id="task-category" placeholder="مثلاً: مراجعة، واجب..."></span>
+      <span class="field"><label>الأولوية</label><select id="task-prio"><option value="mid" selected>متوسطة</option><option value="high">عالية</option><option value="low">منخفضة</option></select></span>
+      <span class="field"><label>الجهد المُقدّر (جلسات)</label><input type="number" id="task-pomo-count" min="1" max="99" value="2" style="width:90px"></span>
+      <span class="field"><label>التكرار</label><select id="task-repeat"><option value="none">بدون</option><option value="daily">يومي</option><option value="weekly">أسبوعي</option></select></span>
+      <span class="field"><label>تاريخ التسليم</label><input type="date" id="task-deadline" title="اختياري"></span>
+      <label class="field-check"><input type="checkbox" id="task-today"> أضِفها لمهام «اليوم»</label>
+    </div>
+    <div class="tab-row">
+      <button class="tab active" onclick="filterTasks('all',this)">الكل</button>
+      <button class="tab tab-today" onclick="filterTasks('today',this)"><i data-lucide="star"></i> اليوم</button>
+      <button class="tab tab-hy" onclick="filterTasks('highyield',this)"><i data-lucide="target"></i> الأولى بالتقديم</button>
+      <span id="task-subj-tabs" class="subj-tabs"><!-- تبويبات المساقات: renderCourseTabs() --></span>
+      <span style="flex:1"></span>
+      <span class="task-search-wrap"><i data-lucide="search"></i><input id="task-search" placeholder="بحث في المهام..." oninput="setTaskSearch(this.value)"></span>
+      <button class="tab" id="task-archive-toggle" onclick="toggleShowArchived()" title="إظهار/إخفاء المؤرشفة"><i data-lucide="archive"></i> المؤرشفة</button>
+      <button class="tab" id="task-sort-toggle" onclick="toggleTaskSort()" title="بدّل بين الترتيب التلقائي والسحب اليدوي"><i data-lucide="arrow-down-up"></i> تلقائي</button>
+      <button class="tab" onclick="copyTasksText()" title="نسخ المهام كنص"><i data-lucide="clipboard-copy"></i> نسخ</button>
+      <button class="tab" onclick="exportTasks()" title="تصدير المهام PDF (طباعة)"><i data-lucide="printer"></i> PDF</button>
+    </div>
+    <div id="task-list" class="scrollable"></div>
+  </div>
+</div>
+
+<!-- العادات والأذكار (مدمجتان — طلب نوح) -->
+<div class="page" id="page-habits">
+  <div class="page-head"><div class="page-title"><i data-lucide="repeat"></i> المداومة</div><div class="page-desc">عاداتك وأذكارك في مكان واحد — أسبوع/شهر/سنة، وتقدر تعدّل أي يوم سابق.</div></div>
+
+  <!-- إضافة موحّدة: اختر «عادة» أو «ذِكر» (طلب نوح) -->
+  <div class="card" data-cid="habits-add">
+    <div class="add-bar">
+      <select id="md-add-type" onchange="syncAddType()" title="نوع الإضافة"><option value="habit">عادة</option><option value="dhikr">ذِكر</option></select>
+      <input id="habit-input" class="add-bar-input" placeholder="أضف عادة جديدة..." onkeydown="if(event.key==='Enter')addHabitOrDhikr()">
+      <input type="number" id="adhkar-target" min="1" value="33" title="هدف الذِّكر" style="width:78px;display:none">
+      <button class="btn add-opt-toggle" id="habit-opt-toggle" onclick="toggleHabitOptions()" title="تصنيف ولون وتكرار"><i data-lucide="sliders-horizontal"></i> خيارات</button>
+      <button class="btn pri" onclick="addHabitOrDhikr()"><i data-lucide="plus"></i> إضافة</button>
+    </div>
+    <div class="ward-quick" id="dhikr-quick" style="display:none"><button class="chip-btn" onclick="adhkarSetTarget(33)">٣٣</button><button class="chip-btn" onclick="adhkarSetTarget(100)">١٠٠</button><button class="chip-btn" onclick="adhkarSetTarget(1000)">١٠٠٠</button></div>
+    <div class="add-options" id="habit-options">
+      <span class="field"><label>التصنيف</label>
+        <select id="habit-cat">
+          <option value="religion">🕌 دين</option>
+          <option value="study">📚 دراسة</option>
+          <option value="health">💪 صحة</option>
+          <option value="other">🌟 أخرى</option>
+        </select>
+      </span>
+      <span class="field"><label>اللون</label>
+        <select id="habit-color">
+          <option value="#0d9488">أخضر</option><option value="#5750d8">نيلي</option><option value="#d97706">برتقالي</option>
+          <option value="#dc2626">أحمر</option><option value="#7c3aed">بنفسجي</option><option value="#0284c7">أزرق</option>
+        </select>
+      </span>
+      <span class="field"><label>التكرار</label><select id="habit-freq"><option value="daily">يومي</option><option value="weekly">أسبوعي</option></select></span>
+    </div>
+  </div>
+  <div class="habit-view-bar">
+    <div class="seg-ctrl" id="habit-view-ctrl"></div>
+  </div>
+  <div class="merge-sec-title"><i data-lucide="repeat"></i> العادات</div>
+  <div id="habit-list" class="tiles-cols"></div>
+
+  <!-- الأذكار (اندمجت هنا — الإضافة من الشريط الموحّد بالأعلى) -->
+  <div class="merge-sec-title" style="margin-top:1.6rem"><i data-lucide="heart"></i> الأذكار</div>
+  <div id="adhkar-list" class="tiles-cols"></div>
+  <div id="adhkar-log-wrap"></div>
+</div>
+
+<!-- مسار العلم -->
+<div class="page" id="page-progress">
+  <div class="page-head"><div class="page-title"><i data-lucide="bar-chart-3"></i> مسار العلم</div><div class="page-desc">اضغط على الشريط أو اكتب النسبة — واضغط اسم المادة لتعديله</div></div>
+  <div class="card" id="term-card" data-cid="term-card"></div>
+  <div class="card" id="srs-panel" data-cid="srs-panel"></div>
+  <div class="card" id="progress-list" data-cid="progress-list"></div>
+  <div class="card" id="gpa-card" data-cid="gpa-card"></div>
+  <div class="card" id="schedule-card" data-cid="schedule-card"></div>
+  <div class="card" data-cid="heatmap">
+    <div class="card-title"><i data-lucide="flame"></i> خريطة النشاط — آخر 91 يوم</div>
+    <div class="heatmap" id="heatmap"></div>
+    <div class="legend">أقل <i class="hm-0"></i><i class="hm-1"></i><i class="hm-2"></i><i class="hm-3"></i><i class="hm-4"></i> أكثر</div>
+  </div>
+</div>
+
+<!-- الميزان -->
+<div class="page" id="page-stats">
+  <div class="page-head"><div class="page-title"><i data-lucide="line-chart"></i> الميزان</div><div class="page-desc">مقسّمة بذكاء — السجل التاريخي محفوظ ويمكنك توثيق أي يوم سابق</div></div>
+
+  <div class="stats-sec"><i data-lucide="gauge"></i> نظرة عامة</div>
+  <!-- مُقسّمة بوضوح حسب الإطار الزمني (اليوم / الأسبوع / الإجمالي) — إصلاح خلط المقاييس -->
+  <div class="stats-scope"><i data-lucide="sun"></i> اليوم</div>
+  <div class="grid3" style="margin-bottom:1rem">
+    <div class="stat-card"><div class="stat-top"><i data-lucide="clock"></i><span class="stat-lbl">دقائق اليوم</span></div><div class="stat-val" id="st-time">0</div></div>
+    <div class="stat-card"><div class="stat-top"><i data-lucide="repeat"></i><span class="stat-lbl">عادات اليوم</span></div><div class="stat-val" id="st-habits">0</div></div>
+    <div class="stat-card"><div class="stat-top"><i data-lucide="check-circle-2"></i><span class="stat-lbl">صلوات في وقتها</span></div><div class="stat-val" id="st-pray-today">0/5</div></div>
+  </div>
+  <div class="stats-scope"><i data-lucide="calendar-days"></i> الأسبوع</div>
+  <div class="grid3" style="margin-bottom:1rem">
+    <div class="stat-card"><div class="stat-top"><i data-lucide="calendar-days"></i><span class="stat-lbl">دقائق الأسبوع</span></div><div class="stat-val" id="st-week">0</div></div>
+  </div>
+  <div class="stats-scope"><i data-lucide="infinity"></i> الإجمالي (منذ البداية)</div>
+  <div class="grid3" style="margin-bottom:1.25rem">
+    <div class="stat-card"><div class="stat-top"><i data-lucide="timer"></i><span class="stat-lbl">جلسات السعي</span></div><div class="stat-val" id="st-pomo">0</div></div>
+    <div class="stat-card"><div class="stat-top"><i data-lucide="flame"></i><span class="stat-lbl">أيام متتالية</span></div><div class="stat-val" id="st-streak">0</div></div>
+    <div class="stat-card"><div class="stat-top"><i data-lucide="check"></i><span class="stat-lbl">مهام منجزة</span></div><div class="stat-val" id="st-tasks">0</div></div>
+  </div>
+
+  <div class="stats-sec"><i data-lucide="sparkles"></i> اعرف نفسك — تحليل عميق</div>
+  <div class="card" data-cid="deep-analysis"><div class="card-title"><i data-lucide="brain"></i> أنماط إنتاجيتك الحقيقية</div><div id="deep-analysis-box"></div></div>
+  <!-- (حُذفت «خريطة الأسبوع» — كانت تكراراً لـ«نشاط الأسبوع» بالأسفل بشكل مختلف) -->
+
+  <div class="stats-sec"><i data-lucide="shield"></i> الدراسة والسعي</div>
+  <!-- تقويم الدراسة (أسبوع/شهر/سنة) — يحلّ محلّ «نشاط الأسبوع» المكرّر، واضغط أي يوم لتوثيقه -->
+  <div id="study-cal" class="stats-cal"></div>
+  <div class="card" data-cid="subj-time"><div class="card-title"><i data-lucide="layers"></i> وقت الدراسة لكل مادة</div><div class="subj-chart" id="subj-time-chart"></div></div>
+  <div class="card" data-cid="analytics"><div class="card-title"><i data-lucide="brain"></i> أنماط إنتاجيتك</div><div id="analytics-box"></div></div>
+  <!-- «أنشط فتراتك الصلاتية» نُقلت هنا (لها علاقة بالدراسة لا الصلاة — طلب نوح) -->
+  <div class="card" data-cid="period-insight"><div id="period-insight"></div></div>
+  <div class="card" data-cid="correlation"><div class="card-title"><i data-lucide="git-compare"></i> تحليل الارتباط (آخر ٣٠ يوماً)</div><div id="correlation-box"></div></div>
+
+  <div class="stats-sec"><i data-lucide="moon-star"></i> الصلاة والعبادات</div>
+  <!-- تقويم العبادات الموحّد (صلاة + قرآن + قيام + أذكار) — اضغط أي يوم لتعديل كل عباداته -->
+  <div id="worship-cal" class="stats-cal"></div>
+  <div class="card" data-cid="prayer-stats"><div class="card-title"><i data-lucide="check-circle-2"></i> ملخص الصلاة (كل الوقت)</div><div id="prayer-stats"></div></div>
+
+  <!-- (حُذف قسم «العبادة — سجلّات القرآن والقيام» — مكرّر مع صفحات العبادة بنظام أسبوع/شهر/سنة) -->
+
+  <div class="stats-sec"><i data-lucide="dumbbell"></i> الرياضة</div>
+  <div id="sport-cal" class="stats-cal"></div>
+  <div class="card" data-cid="sport-stats"><div class="card-title"><i data-lucide="activity"></i> ملخّص التمارين</div><div id="sport-stats"></div></div>
+
+  <div class="stats-sec"><i data-lucide="award"></i> الإنجازات</div>
+  <div class="card" data-cid="achievements"><div class="badge-grid" id="achievements-grid"></div></div>
+
+  <!-- (حُذف تقويم «تعديل اليوم» القديم — حلّ محلّه تقويمات الدراسة/العبادات أعلاه، وكلها تفتح محرّر اليوم الشامل) -->
+</div>
+
+<!-- (أُلغيت صفحة «وضع الامتحان» المستقلة — صارت ودجت عدّ تنازلي في الرئيسية) -->
+
+<!-- صفحات قيد الإنشاء (تكتمل في مراحل لاحقة) -->
+<div class="page" id="page-quran">
+  <div class="page-head"><div class="page-title"><i data-lucide="book-open"></i> القرآن</div><div class="page-desc">سجّل وِردك اليومي وتابع ختمتك — بلطفٍ وتشجيع</div></div>
+  <div id="quran-body" class="tiles-cols"></div>
+</div>
+<div class="page" id="page-qiyam">
+  <div class="page-head"><div class="page-title"><i data-lucide="moon"></i> قيام الليل</div><div class="page-desc">ركعات القيام والوتر، وسلسلة لياليك</div></div>
+  <div id="qiyam-body" class="tiles-cols"></div>
+</div>
+<!-- (دُمجت صفحة «الأذكار» في صفحة «العادات والأذكار» — طلب نوح) -->
+<!-- (حُذفت صفحة «دراسة متقدمة» — غير مستخدمة؛ تقرير PDF انتقل إلى stats.js ويعمل من Ctrl+K) -->
+
+<!-- الصلاة (متتبّع أسبوعي واسع + قضاء) — جدول المواعيد انتقل إلى الإعدادات -->
+<div class="page" id="page-praytrack">
+  <div class="page-head"><div class="page-title"><i data-lucide="check-circle-2"></i> الصلاة</div><div class="page-desc">سجّل كل صلاة بضغطة: جماعة، فذّ، متأخر، قضاء، أو فاتت. تابع أسبوعك كاملاً وعدّل أي يوم.</div></div>
+  <!-- (حُذف «مخطط اليوم» — بديله الأقوى في الجِدّ: تخطيط اليوم حسب الصلوات بمؤقّته البصري)
+       (حُذفت بطاقة المواعيد الأسبوعية — اندمجت في بطاقة الصلاة الموحّدة بالضبط) -->
+  <div class="card" data-cid="pt-week">
+    <div class="pt-toolbar">
+      <button class="btn ghost sm" onclick="ptPrevWeek()"><i data-lucide="chevron-right"></i> الأسبوع الأسبق</button>
+      <div class="pt-range" id="pt-date-label"></div>
+      <button class="btn ghost sm" onclick="ptNextWeek()" id="pt-next-btn">التالي <i data-lucide="chevron-left"></i></button>
+    </div>
+    <div id="pt-body"></div>
+  </div>
+  <div class="card" data-cid="pt-qada-life">
+    <div class="card-title"><i data-lucide="feather"></i> قضاء الفوائت — صلوات العمر</div>
+    <div id="qada-life"></div>
+  </div>
+  <div class="card" data-cid="pt-summary">
+    <div class="card-title"><i data-lucide="bar-chart-2"></i> ملخص الأسبوع والقضاء</div>
+    <div id="pt-week-summary"></div>
+  </div>
+</div>
+
+<!-- (حُذفت صفحة «المقاصد» القديمة — حلّ محلّها مؤشّر المقاصد البصري في الرئيسية والجِدّ) -->
+
+<!-- استجلاء الذهن (التقاط بلا احتكاك + فرز بالسحب) -->
+<div class="page" id="page-braindump">
+  <div class="page-head"><div class="page-title"><i data-lucide="inbox"></i> استجلاء الذهن</div><div class="page-desc">فرّغ ذهنك الآن، وفرّز لاحقاً — اسحب كل فكرة إلى «ديوان الواجبات» أو «حذف»، أو استخدم الأزرار</div></div>
+  <div class="card" data-cid="dump-add">
+    <div class="add-bar">
+      <input id="dump-input" class="add-bar-input" placeholder="اكتب أي فكرة عابرة ثم اضغط Enter..." onkeydown="if(event.key==='Enter')addDump()">
+      <button class="btn" id="dump-voice-btn" onclick="dumpVoiceToggle()" title="تسجيل صوتي"><i data-lucide="mic"></i> تسجيل صوتي</button>
+      <button class="btn pri" onclick="addDump()"><i data-lucide="plus"></i> التقاط</button>
+    </div>
+  </div>
+  <div class="dump-layout">
+    <div class="card dump-inbox-card" data-cid="dump-inbox">
+      <div class="card-title"><i data-lucide="layers"></i> صندوق الوارد <span class="dump-count-badge" id="dump-count">0</span></div>
+      <div id="dump-inbox"></div>
+    </div>
+    <div class="dump-zones">
+      <div class="dump-zone zone-task" ondragover="dumpZoneOver(event)" ondragleave="dumpZoneLeave(event)" ondrop="dumpZoneDrop(event,'task')">
+        <i data-lucide="check-square"></i><div class="dz-title">ديوان الواجبات</div><div class="dz-sub">أفلت هنا لتتحوّل واجباً</div>
+      </div>
+      <div class="dump-zone zone-trash" ondragover="dumpZoneOver(event)" ondragleave="dumpZoneLeave(event)" ondrop="dumpZoneDrop(event,'trash')">
+        <i data-lucide="trash-2"></i><div class="dz-title">سلة المهملات</div><div class="dz-sub">أفلت هنا للحذف (مع تراجُع)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- الرياضة -->
+<div class="page" id="page-sport">
+  <div class="page-head"><div class="page-title"><i data-lucide="dumbbell"></i> الرياضة</div><div class="page-desc">سجّل تمارينك (اسم التمرين + عدد العدّات). <span id="sport-today-sum"></span></div></div>
+  <div class="card" data-cid="sport-log">
+    <div class="add-bar">
+      <input id="sport-name" class="add-bar-input" placeholder="اسم التمرين (مثل: ضغط، عقلة)..." onkeydown="if(event.key==='Enter')addSportEntry()">
+      <input type="number" id="sport-reps" min="1" value="10" style="width:90px" title="عدد العدّات">
+      <button class="btn pri" onclick="addSportEntry()"><i data-lucide="plus"></i> سجّل</button>
+    </div>
+    <div id="sport-list"></div>
+  </div>
+</div>
+
+<!-- رحلة السعي (شرح نظام الدرجات) -->
+<div class="page" id="page-xp">
+  <div class="page-head"><div class="page-title"><i data-lucide="map"></i> رحلة السعي</div><div class="page-desc">درجاتك تنمو مع كل خطوة — دراسةً وجِدّاً وعبادةً ورياضةً والتزاماً. هنا تفهم النظام كاملاً</div></div>
+  <div id="xp-page-body"></div>
+  <div class="card" id="rewards-card" data-cid="rewards">
+    <div class="card-title"><i data-lucide="gift"></i> بنك المكافآت — اصرف درجاتك على ما تحبّ</div>
+    <div id="rewards-body"></div>
+  </div>
+</div>
+
+<!-- (حُذفت صفحة «النهوض» — اندمجت كبطاقة بالرئيسية، وتمرين إعادة البناء من سَنَد/Ctrl+K) -->
+
+<!-- الطُّهر (رفيق التعافي — خاص) -->
+<div class="page" id="page-recovery">
+  <div class="page-head"><div class="page-title"><i data-lucide="shield-check"></i> الطُّهر</div><div class="page-desc">رفيقك على طريق العزيمة — خاصّ، بالرجاء لا القنوط، بلا حساب ولا توبيخ</div></div>
+  <div id="recovery-body"></div>
+</div>
+
+<!-- (حُذفت صفحة «الروتين» — غير مستخدمة بقرار المالك) -->
+
+<!-- الضبط -->
+<div class="page masonry" id="page-settings">
+  <div class="page-head"><div class="page-title"><i data-lucide="settings-2"></i> الضبط</div><div class="page-desc">تخصيص المظهر والمواعيد والملفات الشخصية</div></div>
+
+  <!-- الصلاة — بطاقة موحّدة: الجلب + التذكير والأذان + جدول المواعيد (دمج ٣ بطاقات) -->
+  <div class="card" data-cid="sett-prayer">
+    <div class="setting-group">
+      <div class="setting-group-title"><i data-lucide="sun"></i> الصلاة — المواقيت والتذكير والأذان</div>
+      <div class="setting-row">
+        <div><div class="setting-label">المدينة</div><div class="setting-sub">يُستخدم للجلب من الإنترنت</div></div>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <input id="sett-city" placeholder="مثلاً: Cairo" style="width:130px" oninput="settChanged()">
+          <input id="sett-country" placeholder="مثلاً: Egypt" style="width:130px" oninput="settChanged()">
+        </div>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">طريقة الحساب</div></div>
+        <select id="sett-method" onchange="settChanged()">
+          <option value="4">أم القرى (مكة)</option>
+          <option value="2">مسلم للعالم الإسلامي</option>
+          <option value="1">كراتشي</option>
+          <option value="3">أمريكا الشمالية ISNA</option>
+          <option value="5">مصر</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">الجلب التلقائي الأسبوعي</div><div class="setting-sub" id="sett-last-fetch">لم يتم الجلب بعد</div></div>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <span class="fetch-status fetch-idle" id="fetch-status-badge">—</span>
+          <button class="btn pri sm" onclick="fetchPrayerTimes(true)"><i data-lucide="download-cloud"></i> جلب الآن</button>
+        </div>
+      </div>
+      <div class="setting-row" style="align-items:flex-start">
+        <div><div class="setting-label">تذكير قبل الصلاة + نغمة الأذان</div><div class="setting-sub">إشعار قبل الأذان، ونغمة عند دخول الوقت (اختياري)</div></div>
+        <div class="grad-ctrl" id="worship-ctrl"></div>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">جدول المواعيد الأسبوعي</div><div class="setting-sub">يتكرر كل أسبوع — عدّله يدوياً أو اجلبه تلقائياً</div></div>
+        <button class="btn sm" id="pt-times-toggle" onclick="togglePrayerTimes()"><i data-lucide="pencil"></i> تعديل المواعيد</button>
+      </div>
+      <div id="prayer-times-edit" class="pt-times-edit" hidden>
+        <div style="overflow-x:auto"><table class="prayer-table" id="prayer-table"></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- الفصل الدراسي (كان «عدّاد الامتحان» — صار عامّاً: ترم + مواعيد متعددة) -->
+  <div class="card" data-cid="sett-exam">
+    <div class="setting-group">
+      <div class="setting-group-title"><i data-lucide="calendar-range"></i> الفصل الدراسي</div>
+      <div class="setting-row">
+        <div><div class="setting-label">اسم الترم</div><div class="setting-sub">يظهر في «مسار العلم» مع شريط تقدّم الترم</div></div>
+        <input id="sett-term-name" placeholder="الفرقة الأولى — ترم أول" style="width:210px" oninput="settTermChanged()">
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">بداية ونهاية الترم</div><div class="setting-sub">منهما يُحسب «أنت في الأسبوع كذا من كذا»</div></div>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <input type="date" id="sett-term-start" oninput="settTermChanged()" title="البداية">
+          <input type="date" id="sett-term-end" oninput="settTermChanged()" title="النهاية">
+        </div>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">المواعيد (امتحانات وتسليمات)</div><div class="setting-sub">بقت قائمة متعددة بدل موعد واحد — والعدّاد يعرض أقربها</div></div>
+        <button class="btn" onclick="navTo('progress')"><i data-lucide="calendar-clock"></i> إدارة المواعيد</button>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">وضع الإجازة</div><div class="setting-sub">حِمل أخفّ ونبرة أهدأ — يخفّض هدف الدقائق ويوقف لهجة الاستعجال (اختياري)</div></div>
+        <button class="btn" id="lightload-btn" onclick="toggleLightLoad()"><i data-lucide="palmtree"></i> <span id="lightload-lbl">مُطفأ</span></button>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">ابدأ مرحلة جديدة</div><div class="setting-sub">اعملها <b>قبل</b> ما تضيف مساقات المرحلة الجديدة: تؤرشف كل المساقات النشطة وواجباتها — الصلاة والعادات والسلاسل وسجلّ ساعاتك تفضل كما هي، والأرشفة تتراجع بضغطة</div></div>
+        <button class="btn" onclick="startNewChapter()"><i data-lucide="book-open-check"></i> اطوِ الصفحة السابقة</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- (دُمجت بطاقتا «التنبيهات والأذان» و«المواعيد الأسبوعية» في بطاقة الصلاة الموحّدة أعلاه) -->
+
+  <!-- التنبيهات والعمل في الخلفية (تطبيق سطح المكتب) -->
+  <div class="card" data-cid="sett-remind">
+    <div class="setting-group">
+      <div class="setting-group-title"><i data-lucide="bell-ring"></i> التنبيهات والعمل في الخلفية</div>
+      <div class="setting-sub" style="margin-bottom:.6rem">تذكيرات الصلاة والواجبات تصلك كإشعارات نظام حتى عند إغلاق النافذة، والتقاط فكرة من أي مكان باختصار عام.</div>
+      <div class="grad-ctrl" id="remind-ctrl"></div>
+    </div>
+  </div>
+
+  <!-- ويدجت المؤقّت (اختياري بالكامل — تطبيق سطح المكتب) -->
+  <div class="card" data-cid="sett-timerwidget">
+    <div class="setting-group">
+      <div class="setting-group-title"><i data-lucide="timer"></i> ويدجت المؤقّت</div>
+      <div class="setting-sub" style="margin-bottom:.6rem">تحكّم في جلسة السعي دون فتح التطبيق: أزرار وشارة دقائق على شريط المهام، قائمة Tray حيّة، أو نافذة عائمة صغيرة. عون لعمى الوقت — والمؤقّت يبقى أمامك.</div>
+      <div class="grad-ctrl" id="timerwidget-ctrl"></div>
+    </div>
+  </div>
+
+  <!-- متتبّع الدواء (خاص واختياري) -->
+  <div class="card" data-cid="sett-med">
+    <div class="setting-group">
+      <div class="setting-group-title"><i data-lucide="pill"></i> متتبّع الدواء — خاصّ واختياري</div>
+      <div class="setting-sub" style="margin-bottom:.6rem">تذكير لطيف وسجلّ يومي بسلسلة التزام. لا يظهر إلا إذا فعّلته، ولا يدخل في أي تقرير أو درجات.</div>
+      <div class="grad-ctrl" id="med-ctrl"></div>
+    </div>
+  </div>
+
+  <!-- الملفات الشخصية -->
+  <div class="card" data-cid="sett-profiles">
+    <div class="setting-group">
+      <div class="setting-group-title"><i data-lucide="users"></i> الملفات الشخصية</div>
+      <div id="profiles-list" style="margin-bottom:.85rem"></div>
+      <div class="add-bar" style="margin-bottom:.6rem">
+        <input id="new-profile-name" class="add-bar-input" placeholder="اسم ملف جديد..." maxlength="24" onkeydown="if(event.key==='Enter')createProfile()">
+        <button class="btn pri" onclick="createProfile()"><i data-lucide="user-plus"></i> ملف جديد</button>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">الجولة التعريفية</div><div class="setting-sub">أعِد عرض جولة الترحيب والإعداد</div></div>
+        <button class="btn sm" onclick="startOnboarding()"><i data-lucide="compass"></i> إعادة الجولة</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- الهوية البصرية -->
+  <div class="card" data-cid="sett-identity">
+    <div class="setting-group">
+      <div class="setting-group-title"><i data-lucide="palette"></i> الهوية البصرية</div>
+      <div class="setting-row">
+        <div><div class="setting-label">النمط الهادئ</div><div class="setting-sub">مساحات أوسع · عمود متمركز · بطاقات بلا أزرار ظاهرة (تظهر عند المرور) · ألوان أقلّ إنذاراً. يحاكي المظهر المريح — ويقترن جيداً مع «خط العناوين: كلاسيكي».</div></div>
+        <button class="btn sm" id="calm-btn" onclick="toggleCalm()">تفعيل</button>
+      </div>
+      <div class="setting-row" style="align-items:flex-start;flex-direction:column;gap:.6rem">
+        <div><div class="setting-label">القوالب الجاهزة</div><div class="setting-sub">هويّة كاملة بنقرة — لون وخلفية وتدرّج معاً</div></div>
+        <div class="templates-gallery" id="templates-gallery"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">لون الثيم</div>
+        <div class="theme-dots" id="settings-theme-dots"></div>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">لون مخصّص للثيم</div><div class="setting-sub">اصنع لونك الخاص الذي يريح عينك</div></div>
+        <div style="display:flex;gap:.5rem;align-items:center">
+          <input type="color" id="custom-accent" value="#5750d8" oninput="setCustomAccent(this.value)" title="اختر لوناً">
+          <button class="btn sm" onclick="clearCustomAccent()" title="عودة لألوان الثيم"><i data-lucide="rotate-ccw"></i> إلغاء</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">الوضع الليلي</div><div class="setting-sub">مكانه هنا فقط — أُزيل من الواجهة الرئيسية</div></div>
+        <button class="btn sm" onclick="toggleDark()" id="sett-dark-btn"><i data-lucide="moon"></i> تفعيل</button>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">خط العناوين</div><div class="setting-sub">«كلاسيكي» يطبّق خط Amiri النسخي على العناوين والأرقام — مظهر أهدأ وأدفأ (النص يبقى كما هو)</div></div>
+        <div class="seg-ctrl" id="headfont-ctrl"></div>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">حجم الخط</div><div class="setting-sub">خط أكبر أوضح للقراءة (مناسب لضعف النظر)</div></div>
+        <div class="seg-ctrl" id="fontscale-ctrl"></div>
+      </div>
+      <div class="setting-row" style="align-items:flex-start">
+        <div><div class="setting-label">شعار التطبيق</div><div class="setting-sub">صورة شخصية تظهر في الشريط العلوي والجانبي (تُحفظ كـ Blob)</div></div>
+        <div id="logo-ctrl"></div>
+      </div>
+      <div class="setting-row">
+        <div class="setting-label">لون الخلفية المخصص</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap" id="bg-swatches"></div>
+      </div>
+      <div class="setting-row" style="align-items:flex-start">
+        <div><div class="setting-label">التدرّج اللوني للخلفية</div><div class="setting-sub">تأثير لوني متلاشٍ يملأ خلفية التطبيق — فعّله وخصّص ألوانه</div></div>
+        <div class="grad-ctrl" id="gradient-ctrl"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- البيانات والنسخ — بطاقة موحّدة (محلي + سحابي + لقطات) -->
+  <div class="card" data-cid="sett-data">
+    <div class="setting-group">
+      <div class="setting-group-title"><i data-lucide="database"></i> البيانات والنسخ — محلي وسحابي</div>
+      <div class="setting-row">
+        <div><div class="setting-label">تصدير / استيراد</div><div class="setting-sub">ملف JSON كامل ببياناتك</div></div>
+        <div style="display:flex;gap:.4rem">
+          <button class="btn sm" onclick="exportData()"><i data-lucide="download"></i> تصدير</button>
+          <label class="btn sm" style="cursor:pointer"><i data-lucide="folder-open"></i> استيراد<input type="file" accept=".json" onchange="importData(event)" style="display:none"></label>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">النسخ الاحتياطي التلقائي</div><div class="setting-sub" id="backup-status">يحفظ نسخة يومية تلقائياً على جهازك</div></div>
+        <div style="display:flex;gap:.4rem">
+          <button class="btn sm" onclick="backupNow()"><i data-lucide="save"></i> انسخ الآن</button>
+          <button class="btn sm" onclick="openBackupsFolder()"><i data-lucide="folder"></i> المجلد</button>
+          <button class="btn sm dan-outline" onclick="restoreFromBackup()"><i data-lucide="history"></i> استعادة</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">مجلد المزامنة السحابية</div><div class="setting-sub">وجّهه لمجلد Drive/OneDrive المُزامَن — تُرفع نسخك تلقائياً · الحالي: <span id="backup-folder">…</span></div></div>
+        <button class="btn sm" onclick="chooseBackupFolder()"><i data-lucide="folder-cog"></i> اختر المجلد</button>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">المزامنة التلقائية الثنائية</div><div class="setting-sub">يكتب أحدث نسخة في مجلد المزامنة، ويعرض سحب الأحدث عند فتح جهاز آخر (يحتاج تعيين المجلد أعلاه). خاصّ تماماً — بلا حساب ولا خادم.</div></div>
+        <label class="grad-row" style="margin:0"><input type="checkbox" id="autosync-chk" onchange="toggleAutoSync()"></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">اللقطات (تاريخ النسخ)</div><div class="setting-sub">نقاط استعادة مؤرّخة — تلقائية يومياً + يدوية</div></div>
+        <button class="btn sm pri" onclick="snapshotNow()"><i data-lucide="camera"></i> أنشئ لقطة الآن</button>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">سجلّ الأخطاء</div><div class="setting-sub">أي خطأ تقني يُدوَّن في ملف محلي على جهازك فقط — لا يُرسَل لأي جهة. مفيد عند الإبلاغ عن مشكلة.</div></div>
+        <button class="btn sm" onclick="if(window.noahAPI&&noahAPI.openLogsFolder)noahAPI.openLogsFolder();else notify('متاح في تطبيق سطح المكتب فقط','info')"><i data-lucide="file-warning"></i> افتح السجلّ</button>
+      </div>
+      <div id="snapshots-list" class="snapshots-list"></div>
+    </div>
+  </div>
+
+  <!-- وضع التخصيص (إظهار/إخفاء أي ميزة) -->
+  <div class="card" data-cid="sett-customize">
+    <div class="setting-group">
+      <div class="setting-group-title"><i data-lucide="sliders-horizontal"></i> التخصيص — أظهِر أو أخفِ أي ميزة</div>
+      <div class="setting-sub" style="margin-bottom:.7rem">صمّم تطبيقك كما يناسبك تماماً — أخفِ ما لا تحتاجه ليبقى ذهنك صافياً (مهمّ لتركيز ADHD).</div>
+      <div class="row" style="gap:.5rem;margin-bottom:.85rem">
+        <button class="btn sm pri" onclick="simplifyPreset()"><i data-lucide="minimize-2"></i> الوضع المبسّط</button>
+        <button class="btn sm" onclick="showAllFeatures()"><i data-lucide="eye"></i> أظهِر الكل</button>
+      </div>
+      <div id="feature-toggles"></div>
+      <!-- (دُمجت Pro والطُّهر هنا — كانا بطاقتين مستقلتين بلا داعٍ؛ وكلاهما له زرّ سريع بالشريط العلوي) -->
+      <div class="setting-row" style="margin-top:.8rem">
+        <div><div class="setting-label">الواجهة الاحترافية «Pro»</div><div class="setting-sub">عمق وظلال وزجاجية — وله زرّ سريع ✨ بالشريط العلوي</div></div>
+        <button class="btn sm" id="proui-btn" onclick="toggleProUI()">تفعيل</button>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">تقليل الحركة</div><div class="setting-sub">يوقف الأنيميشن والانتقالات — أهدأ للتركيز وأقلّ تشتيتاً (اختياري، مُطفأ افتراضياً)</div></div>
+        <button class="btn sm" id="reduce-motion-btn" onclick="toggleReduceMotion()">تفعيل</button>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">رفيق الطُّهر (خاص)</div><div class="setting-sub">يظهر عند التفعيل فقط، لا يُحتسب بأي تقرير — وله زرّ سريع 🛡️ بالشريط العلوي</div></div>
+        <button class="btn sm" id="recovery-toggle-btn" onclick="toggleRecovery()">تفعيل</button>
+      </div>
+      <div class="setting-row">
+        <div><div class="setting-label">تنظيم تخطيط الصفحات</div><div class="setting-sub">عدد الأعمدة صار <b>لكل صفحة على حدة</b> من زرّ «تنظيم الصفحة» <i data-lucide="layout-panel-top" style="width:13px;height:13px;vertical-align:-2px"></i> أعلى يسار الشريط — كل صفحة لها إعدادها المستقل.</div></div>
+      </div>
+      <div class="setting-row" style="align-items:flex-start;flex-direction:column;gap:.5rem">
+        <div><div class="setting-label">بنك الأيقونات</div><div class="setting-sub">كل ما أخفيته بزر ✕ من الرئيسية — اضغط أي واحدة لإرجاعها</div></div>
+        <div id="icon-bank"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- (أُزيل كرت اختصارات لوحة المفاتيح من الواجهة — الاختصارات تعمل كما هي، لكن دون كرت يزحم الضبط) -->
+</div>
+
+</div>
+</main>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<!-- Badge popup -->
+<div class="badge-popup-overlay" id="badge-overlay" onclick="closeBadgePopup()"></div>
+<div class="badge-popup" id="badge-popup">
+  <div class="badge-emoji" id="bp-emoji">🏆</div>
+  <div class="badge-title-pop" id="bp-title">إنجاز جديد!</div>
+  <div class="badge-desc-pop" id="bp-desc"></div>
+  <button class="btn pri sm" onclick="closeBadgePopup()"><i data-lucide="check"></i> رائع!</button>
+</div>
+
+<!-- طبقة تشويش التركيز: نقرة في أي مكان تُلغي التركيز (طلب نوح) -->
+<div id="focus-backdrop" onclick="toggleFocus()" title="اضغط في أي مكان للخروج من التركيز"></div>
+<!-- زر إلغاء التركيز العائم -->
+<button class="focus-overlay-btn" id="focus-exit-btn" onclick="toggleFocus()">
+  <i data-lucide="eye-off"></i> إلغاء التركيز
+</button>
+
+<!-- زر «سَنَد» العائم — مظلّة موحّدة (سكينة / النهوض / الطُّهر)، حاضر دائماً -->
+<button class="sakina-fab" id="sakina-fab" onclick="openSanad()" title="سَنَد — دعم نفسيّ إن ضاق صدرك">
+  <i data-lucide="heart-handshake"></i><span class="sakina-fab-lbl">سَنَد</span>
+</button>
+
+<!-- استجلاء الذهن السريع داخل «الجِدّ» — زر عائم + نافذة صغيرة (تظهر أثناء الجلسة فقط، المهمة ٢١) -->
+<button class="jad-dump-fab" id="jad-dump-fab" onclick="toggleJadDump()" title="فكرة عابرة؟ التقطها دون قطع تركيزك"><i data-lucide="inbox"></i> فكرة عابرة</button>
+<div class="jad-dump-pop" id="jad-dump-pop">
+  <div class="jdp-title"><i data-lucide="inbox"></i> التقاط سريع — لا تقطع تركيزك</div>
+  <textarea id="jad-dump-input" placeholder="اكتب الفكرة ثم التقطها وعُد لجلستك..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();saveJadDump();}"></textarea>
+  <div class="jdp-actions"><button class="btn ghost sm" onclick="toggleJadDump()">إغلاق</button><button class="btn pri sm" onclick="saveJadDump()"><i data-lucide="check"></i> التقاط</button></div>
+</div>
+
+<!-- حاوية تقرير الطباعة (تظهر عند الطباعة فقط — تصدير PDF) -->
+<div id="print-report" aria-hidden="true"></div>
+
+<!-- لوحة الأوامر + البحث الشامل (Ctrl+K) -->
+<div class="palette-overlay" id="palette-overlay" onclick="if(event.target===this)closePalette()">
+  <div class="palette">
+    <div class="palette-input-wrap"><i data-lucide="search"></i><input id="palette-input" placeholder="ابحث أو نفّذ أمراً…" oninput="paletteSearch(this.value)" onkeydown="paletteKey(event)"></div>
+    <div class="palette-results" id="palette-results"></div>
+    <div class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd> تنقّل</span><span><kbd>Enter</kbd> تنفيذ</span><span><kbd>Esc</kbd> إغلاق</span><span class="pf-hint">Ctrl+K للفتح</span></div>
+  </div>
+</div>
+
+<!-- شريط اليوم الإسلامي = كبسولة عائمة قابلة للنقر (تنقل لصفحة الصلاة) -->
+<div id="prayer-status-bar" class="prayer-status-bar" onclick="navTo('praytrack')" title="افتح صفحة الصلاة">
+  <div class="psb-inner">
+    <div class="psb-period" id="psb-period"></div>
+    <div class="psb-track"><div class="psb-fill" id="psb-fill"></div></div>
+    <div class="psb-next" id="psb-next"></div>
+  </div>
+</div>
+
+<!-- نافذة النية الصباحية -->
+<div class="ritual-overlay" id="niyyah-overlay" style="display:none" onclick="if(event.target===this)closeNiyyah()">
+  <div class="ritual-modal">
+    <div class="ritual-header">
+      <div class="ritual-icon">🌅</div>
+      <div class="ritual-title">نيّة اليوم</div>
+      <div class="ritual-sub">بسم الله — ماذا تُريد أن تُنجز اليوم؟</div>
+    </div>
+    <div class="ritual-body">
+      <div class="niyyah-items">
+        <div class="niyyah-item"><span class="niyyah-num">١</span><input id="niyyah-1" class="niyyah-input" placeholder="الأولوية الأولى..." maxlength="80"></div>
+        <div class="niyyah-item"><span class="niyyah-num">٢</span><input id="niyyah-2" class="niyyah-input" placeholder="الأولوية الثانية..." maxlength="80"></div>
+        <div class="niyyah-item"><span class="niyyah-num">٣</span><input id="niyyah-3" class="niyyah-input" placeholder="الأولوية الثالثة (اختياري)..." maxlength="80"></div>
+      </div>
+    </div>
+    <div class="ritual-foot">
+      <button class="btn pri" onclick="saveNiyyah()"><i data-lucide="check"></i> ابدأ يومك</button>
+      <button class="btn ghost" onclick="closeNiyyah()">لاحقاً</button>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة المحاسبة المسائية -->
+<div class="ritual-overlay" id="muhasaba-overlay" style="display:none" onclick="if(event.target===this)closeMuhasaba()">
+  <div class="ritual-modal">
+    <div class="ritual-header">
+      <div class="ritual-icon">🌙</div>
+      <div class="ritual-title">المحاسبة</div>
+      <div class="ritual-sub">لحظة تأمّل — كيف كان يومك؟</div>
+    </div>
+    <div class="ritual-body">
+      <label class="ritual-q">ما الذي أنجزتَه اليوم؟</label>
+      <textarea id="muhasaba-done" class="ritual-textarea" placeholder="اكتب ما تيسّر..." rows="3" maxlength="300"></textarea>
+      <label class="ritual-q">اذكر نعمة واحدة شكرتَ الله عليها اليوم</label>
+      <input id="muhasaba-note" class="ritual-input" placeholder="نعمة اليوم..." maxlength="120">
+    </div>
+    <div class="ritual-foot">
+      <button class="btn pri" onclick="saveMuhasaba()"><i data-lucide="check"></i> حفظ واختم يومك</button>
+      <button class="btn ghost" onclick="closeMuhasaba()">تجاوز</button>
+    </div>
+  </div>
+</div>
+
+<!-- التقرير الأسبوعي -->
+<div class="ritual-overlay" id="weekly-report-overlay" style="display:none" onclick="if(event.target===this)closeWeeklyReport()">
+  <div class="ritual-modal ritual-modal-wide">
+    <div class="ritual-header">
+      <div class="ritual-icon">📊</div>
+      <div class="ritual-title">تقريرك الأسبوعي</div>
+      <div class="ritual-sub" id="weekly-report-week"></div>
+    </div>
+    <div class="ritual-body" id="weekly-report-body"></div>
+    <div class="ritual-foot">
+      <button class="btn pri" onclick="closeWeeklyReport()"><i data-lucide="check"></i> رائع، شكراً!</button>
+      <button class="btn" onclick="shareAchievementCard()"><i data-lucide="image"></i> شارِك إنجازك</button>
+    </div>
+  </div>
+</div>
+
+<script defer src="js/core.js"></script>
+<script defer src="js/db.js"></script>
+<script defer src="js/migrate.js"></script>
+<script defer src="js/storage.js"></script>
+<script defer src="js/shell.js"></script>
+<script defer src="js/timer.js"></script>
+<script defer src="js/tasks.js"></script>
+<script defer src="js/habits.js"></script>
+<script defer src="js/stats.js"></script>
+<script defer src="js/courses.js"></script>
+<script defer src="js/grades.js"></script>
+<script defer src="js/schedule.js"></script>
+<script defer src="js/prayer.js"></script>
+<script defer src="js/braindump.js"></script>
+<script defer src="js/worship.js"></script>
+<script defer src="js/coach.js"></script>
+<script defer src="js/sakina.js"></script>
+<script defer src="js/studio.js"></script>
+<script defer src="js/dayplan.js"></script>
+<script defer src="js/sport.js"></script>
+<script defer src="js/recovery.js"></script>
+<script defer src="js/confidence.js"></script>
+<script defer src="js/customize.js"></script>
+<script defer src="js/hub.js"></script>
+<script defer src="js/palette.js"></script>
+<script defer src="js/profiles.js"></script>
+<script defer src="js/backup.js"></script>
+<script defer src="js/home.js"></script>
+<script defer src="js/cards.js"></script>
+<script defer src="js/islamic.js"></script>
+<script defer src="js/rewards.js"></script>
+<script defer src="js/meds.js"></script>
+<script defer src="js/sync.js"></script>
+<script defer src="js/remind.js"></script>
+<script defer src="js/widget.js"></script>
+<script defer src="js/bootstrap.js"></script>
+</body>
+</html>

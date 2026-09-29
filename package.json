@@ -1,0 +1,64 @@
+{
+  "name": "noah-dashboard",
+  "version": "10.9.1",
+  "description": "مُستدرِك — تطبيق سطح مكتب لإدارة الدراسة والعادات والصلوات",
+  "author": "Noah",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test \"tests/*.test.js\"",
+    "assets": "node scripts/fetch-assets.js",
+    "icon": "node scripts/make-icon.js",
+    "prep": "node scripts/make-icon.js && node scripts/fetch-assets.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.noah.studydashboard",
+    "productName": "Mustadrik",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
+      }
+    ],
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "مُستدرِك",
+      "artifactName": "Mustadrik-Setup-${version}.${ext}"
+    }
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  }
+}
+
