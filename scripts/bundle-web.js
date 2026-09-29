@@ -12,11 +12,14 @@ const fs   = require('fs');
 const path = require('path');
 
 const SRC  = path.join(__dirname, '..', 'src');
+// same lucide release as the bundled offline copy (src/assets/lucide.min.js)
+const LUCIDE_VERSION = (/lucide v([\d.]+)/.exec(fs.readFileSync(path.join(SRC, 'assets', 'lucide.min.js'), 'utf8').slice(0, 200)) || [])[1] || '1.17.0';
 const css  = fs.readFileSync(path.join(SRC, 'styles.css'),   'utf8');
-// renderer logic now lives in 10 classic-script modules under src/js/ (must concat in load order)
-const JS_MODULES = ['core','db','migrate','storage','shell','timer','tasks','habits','stats','courses','grades','schedule','prayer','braindump','worship','coach','sakina','studio','dayplan','sport','recovery','confidence','customize','hub','palette','profiles','backup','home','cards','islamic','rewards','meds','sync','remind','widget','bootstrap'];
-const js   = JS_MODULES.map(function(m){ return fs.readFileSync(path.join(SRC, 'js', m + '.js'), 'utf8'); }).join('\n');
 let   html = fs.readFileSync(path.join(SRC, 'index.html'),   'utf8');
+// renderer modules, in the exact load order of index.html (single source of truth — no second list to keep in sync)
+const JS_MODULES = Array.from(html.matchAll(/<script defer src="js\/([\w-]+)\.js"><\/script>/g), function(m){ return m[1]; });
+if (JS_MODULES.length < 10) throw new Error('could not read the module list from index.html');
+const js   = JS_MODULES.map(function(m){ return fs.readFileSync(path.join(SRC, 'js', m + '.js'), 'utf8'); }).join('\n');
 
 // 1) Remove CSP meta (blocks onclick in plain browser).
 html = html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>\n?/g, '');
@@ -24,7 +27,7 @@ html = html.replace(/<meta http-equiv="Content-Security-Policy"[^>]*>\n?/g, '');
 // 2) Replace local Lucide script with CDN.
 html = html.replace(
   /<script defer src="assets\/lucide\.min\.js"><\/script>/,
-  '<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>'
+  '<script src="https://unpkg.com/lucide@' + LUCIDE_VERSION + '/dist/umd/lucide.min.js"></script>'
 );
 
 // 3) Replace local fonts.css + styles.css with CDN fonts + inline CSS.
@@ -46,8 +49,10 @@ html = html.replace(
   '<script>\n' + js.trim() + '\n</script>'
 );
 
-const out = path.join(__dirname, '..', 'noah_dashboard_v10.html');
+const outDir = path.join(__dirname, '..', 'web');
+fs.mkdirSync(outDir, { recursive: true });
+const out = path.join(outDir, 'mustadrik-web.html');
 fs.writeFileSync(out, html, 'utf8');
 const sz = (fs.statSync(out).size / 1024).toFixed(0);
-console.log('✓ noah_dashboard_v10.html written — ' + sz + ' KB');
+console.log('✓ web/mustadrik-web.html written — ' + sz + ' KB (' + JS_MODULES.length + ' modules)');
 console.log('  at: ' + out);

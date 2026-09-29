@@ -25,8 +25,9 @@ app.whenReady().then(() => {
     }
   });
   const msgs = [];
-  win.webContents.on('console-message', (e, level, message, line) => {
-    msgs.push(message);
+  // Electron ≥35 passes the details on the event object; keep the old positional args as a fallback
+  win.webContents.on('console-message', (e, level, message) => {
+    msgs.push((e && e.message) || message || '');
   });
   win.loadFile(asarIndex);
   win.webContents.on('did-finish-load', async () => {

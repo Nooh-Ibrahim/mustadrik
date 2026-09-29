@@ -105,7 +105,6 @@ function loadProfileState(id,isNew){
     if(typeof renderSa3iSettings==='function')renderSa3iSettings();
     if(typeof applyLogo==='function')applyLogo();
     if(typeof renderDumpInbox==='function')renderDumpInbox();
-    if(typeof renderNotes==='function')renderNotes();
     if(typeof renderSettingsPage==='function')renderSettingsPage();
     applyProfileName(); save();
     if(!S.onboarded&&typeof startOnboarding==='function')setTimeout(startOnboarding,400);

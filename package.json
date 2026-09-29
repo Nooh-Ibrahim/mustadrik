@@ -32,6 +32,7 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test \"tests/*.test.js\"",
+    "lint": "eslint .",
     "e2e:fresh": "node scripts/e2e.js fresh",
     "e2e:upgrade": "node scripts/e2e.js upgrade",
     "screenshots": "node scripts/e2e.js shots docs/screenshots",
@@ -103,8 +104,11 @@
     }
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "electron": "44.4.5",
-    "electron-builder": "26.15.3"
+    "electron-builder": "26.15.3",
+    "eslint": "10.11.0",
+    "globals": "17.12.0"
   },
   "dependencies": {
     "electron-updater": "^6.8.9"
