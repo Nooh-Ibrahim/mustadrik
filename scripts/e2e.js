@@ -203,7 +203,10 @@ async function shots(outDir) {
     await sleep(1500);   // let the boot-time checks (restore offer, reminders) run first, then dismiss them
     await c.evaluate(`closeOnboarding(); if(typeof closeConfirm==='function')closeConfirm(); S=Object.assign(freshState(), ${JSON.stringify(demo.state())}); migrate(S); S.onboarded=true; save();
       activeProfileName=S.profileName; rerenderAfterStateSwap(); applyProfileName(); return true;`);
-    for (const shot of demo.SHOTS) {
+    // E2E_SHOTS=<module exporting SHOTS> captures a custom list (e.g. full-height audit screenshots)
+    const list = process.env.E2E_SHOTS ? require(path.resolve(process.env.E2E_SHOTS)).SHOTS : demo.SHOTS;
+    for (const shot of list) {
+      await c.send('Emulation.setDeviceMetricsOverride', { width: shot.width || 1440, height: shot.height || 900, deviceScaleFactor: 1, mobile: false });
       await c.evaluate('if(typeof closeConfirm==="function")closeConfirm(); if(typeof closeBadgePopup==="function")closeBadgePopup(); var n=document.getElementById("notif"); if(n)n.classList.remove("show"); ' + shot.setup);
       await sleep(shot.wait || 900);
       const r = await c.send('Page.captureScreenshot', { format: 'png' });
